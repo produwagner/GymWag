@@ -36,20 +36,18 @@ export default function LandingPage({ deferredPrompt, onEnterApp }) {
       return;
     }
 
-    // Dynamic Manifest Magic!
-    // Create a new manifest with the user's custom name
     const dynamicManifest = {
       name: appName.trim() || "GymRot",
       short_name: appName.trim().substring(0, 12) || "GymRot",
       description: "Seu acompanhador de treinos de hipertrofia.",
-      start_url: "/",
+      start_url: ".",
       display: "standalone",
       background_color: "#090d16",
       theme_color: "#8b5cf6",
       orientation: "portrait",
       icons: [
         {
-          src: "/favicon.svg",
+          src: "favicon.svg",
           sizes: "192x192 512x512",
           type: "image/svg+xml",
           purpose: "any maskable"
