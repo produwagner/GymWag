@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { PlusIcon, TrashIcon, CheckIcon, EditIcon, DragHandleIcon } from "./Icons";
+import { defaultWorkout } from "../data/defaultWorkout";
 
 export default function RoutineManager({ workoutData, onUpdateWorkoutData }) {
   const [selectedRoutineId, setSelectedRoutineId] = useState(() => {
@@ -35,6 +36,13 @@ export default function RoutineManager({ workoutData, onUpdateWorkoutData }) {
   const [editRoutineForm, setEditRoutineForm] = useState({
     name: ""
   });
+
+  const handleResetToDefault = () => {
+    if (window.confirm("Deseja realmente restaurar as fichas padrão do GymRot? Suas personalizações atuais nas fichas serão perdidas (seu histórico de treinos salvos NÃO será afetado).")) {
+      onUpdateWorkoutData(defaultWorkout);
+      setSelectedRoutineId(defaultWorkout.routines[0].id);
+    }
+  };
 
   const selectedRoutine = workoutData.routines.find((r) => r.id === selectedRoutineId) || null;
 
@@ -280,6 +288,9 @@ export default function RoutineManager({ workoutData, onUpdateWorkoutData }) {
         </button>
         <button className="btn-routine-action add" onClick={() => setIsAddingRoutine(true)}>
           Nova Ficha +
+        </button>
+        <button className="btn-routine-action reset" onClick={handleResetToDefault}>
+          Restaurar Padrão
         </button>
       </div>
 
@@ -566,8 +577,8 @@ export default function RoutineManager({ workoutData, onUpdateWorkoutData }) {
 
         .routine-action-buttons {
           display: grid;
-          grid-template-columns: 1fr 1fr 1.2fr;
-          gap: 8px;
+          grid-template-columns: 1fr 1fr 1fr 1.3fr;
+          gap: 6px;
           margin-bottom: 4px;
         }
 

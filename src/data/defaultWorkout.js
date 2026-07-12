@@ -1,7 +1,7 @@
 export const defaultWorkout = {
   id: "default-abcd",
-  name: "Ficha ABCD - Intermediário II",
-  objective: "Hipertrofia",
+  name: "Ficha ABCD - GymRot Personalizada",
+  objective: "Hipertrofia & Recomposição",
   routines: [
     {
       id: "A",
@@ -9,66 +9,66 @@ export const defaultWorkout = {
       exercises: [
         {
           id: "a1",
-          name: "Supino Reto Vertical",
+          name: "Supino Inclinado com Halteres",
           sets: 4,
-          reps: "12",
-          rest: 120, // em segundos
-          load: "", // carga em kg (preenchida pelo usuário)
-          observations: "Aumentar intervalo para priorizar força."
+          reps: "8-10",
+          rest: 120,
+          load: "",
+          observations: "Banco entre 30° e 45°. Foco na porção superior do peitoral."
         },
         {
           id: "a2",
-          name: "Supino Inclinado Articulado",
+          name: "Supino Reto Máquina",
           sets: 3,
-          reps: "10",
+          reps: "10-12",
           rest: 90,
           load: "",
-          observations: "Controle na fase excêntrica (descida)."
+          observations: "Peitoral geral. Controle na fase excêntrica (descida)."
         },
         {
           id: "a3",
           name: "Crucifixo Máquina (Pec Deck)",
           sets: 3,
-          reps: "10",
+          reps: "12",
           rest: 60,
           load: "",
-          observations: "Alongamento máximo no peitoral."
+          observations: "Alongamento máximo no peitoral na descida."
         },
         {
           id: "a4",
-          name: "Desenvolvimento Máquina",
+          name: "Desenvolvimento com Halteres",
           sets: 3,
-          reps: "10",
+          reps: "8-10",
           rest: 90,
           load: "",
-          observations: "Foco em deltoide anterior."
+          observations: "Ombros sentados. Foco em deltoide anterior."
         },
         {
           id: "a5",
-          name: "Elevação Lateral",
-          sets: 3,
-          reps: "10",
+          name: "Elevação Lateral com Halteres",
+          sets: 4,
+          reps: "12-15",
           rest: 60,
           load: "",
-          observations: "Subida explosiva, descida lenta."
+          observations: "Subida explosiva, descida lenta para alargar os ombros."
         },
         {
           id: "a6",
-          name: "Tríceps Pulley Barra",
+          name: "Tríceps Testa com Halteres",
           sets: 3,
-          reps: "10",
+          reps: "10-12",
           rest: 60,
           load: "",
-          observations: "Cotovelos fixos ao lado do corpo."
+          observations: "Foco na cabeça longa. Banco plano ou leve inclinado."
         },
         {
           id: "a7",
-          name: "Tríceps Testa Barra",
+          name: "Tríceps Pulley (Barra ou Corda)",
           sets: 3,
-          reps: "10",
+          reps: "12",
           rest: 60,
           load: "",
-          observations: "Pode ser feito no banco ou na polia baixa."
+          observations: "Cotovelos fixos ao lado do corpo."
         },
         {
           id: "a8",
@@ -77,7 +77,16 @@ export const defaultWorkout = {
           reps: "15",
           rest: 60,
           load: "",
-          observations: "Foco no controle abdominal."
+          observations: "Foco no controle abdominal concentrado."
+        },
+        {
+          id: "a9",
+          name: "Cardio (Corrida/Trote)",
+          sets: 1,
+          reps: "20 min",
+          rest: 0,
+          load: "",
+          observations: "Intensidade moderada na esteira plana pós-musculação."
         }
       ]
     },
@@ -87,44 +96,44 @@ export const defaultWorkout = {
       exercises: [
         {
           id: "b1",
-          name: "Agachamento Smith",
+          name: "Agachamento Smith (ou Hack)",
           sets: 4,
-          reps: "12",
+          reps: "8-10",
           rest: 150,
           load: "",
-          observations: "Intervalo maior para garantir a carga de trabalho."
+          observations: "Smith ou Hack. Use amplitude máxima com segurança."
         },
         {
           id: "b2",
-          name: "Afundo com Halteres",
+          name: "Leg Press 45°",
           sets: 3,
-          reps: "10",
-          rest: 90,
-          load: "",
-          observations: "Foco unilateral. Controlar equilíbrio."
-        },
-        {
-          id: "b3",
-          name: "Leg 45",
-          sets: 3,
-          reps: "10",
+          reps: "10-12",
           rest: 120,
           load: "",
           observations: "Amplitude máxima, sem bater os joelhos."
         },
         {
-          id: "b4",
-          name: "Abdução Máquina",
+          id: "b3",
+          name: "Cadeira Extensora",
           sets: 3,
-          reps: "10",
+          reps: "12-15",
           rest: 60,
           load: "",
-          observations: "Foco em glúteo médio."
+          observations: "Isolador de quadríceps. Segure 1s no topo."
+        },
+        {
+          id: "b4",
+          name: "Flexora Deitada (Mesa Flexora)",
+          sets: 3,
+          reps: "10-12",
+          rest: 60,
+          load: "",
+          observations: "Trabalho de posterior de coxa leve como transição."
         },
         {
           id: "b5",
-          name: "Panturrilha em Pé (Leg Press)",
-          sets: 3,
+          name: "Panturrilha em Pé (no Leg Press)",
+          sets: 4,
           reps: "15",
           rest: 60,
           load: "",
@@ -148,143 +157,143 @@ export const defaultWorkout = {
         {
           id: "c1",
           name: "Puxada Alta Pronada",
-          sets: 3,
-          reps: "10-12",
+          sets: 4,
+          reps: "8-10",
           rest: 90,
           load: "",
-          observations: "Foco no latíssimo do dorso."
+          observations: "Foco no latíssimo do dorso para alargar as costas."
         },
         {
           id: "c2",
-          name: "Puxada Alta Supinada",
+          name: "Remada Unilateral com Haltere (Serrote)",
           sets: 3,
-          reps: "10-12",
+          reps: "8-10",
           rest: 90,
           load: "",
-          observations: "Maior ação do bíceps e trapézio inferior."
+          observations: "Faça o arco puxando o peso em direção ao seu quadril."
         },
         {
           id: "c3",
-          name: "Remada Baixa Neutra",
+          name: "Puxada Alta com Triângulo",
           sets: 3,
           reps: "10-12",
           rest: 90,
           load: "",
-          observations: "Contrair bem as costas no final."
+          observations: "Pegada neutra. Foco em dorsais médias e bíceps."
         },
         {
           id: "c4",
-          name: "Crucifixo Inverso (Máquina ou Halteres)",
-          sets: 3,
-          reps: "12",
+          name: "Crucifixo Inverso (Máquina ou Haltere)",
+          sets: 4,
+          reps: "12-15",
           rest: 60,
           load: "",
           observations: "Isolamento de deltoide posterior."
         },
         {
           id: "c5",
-          name: "Remada Alta na Polia Baixa",
-          sets: 3,
-          reps: "10-12",
-          rest: 60,
-          load: "",
-          observations: "Puxar a barra até a linha do peito."
-        },
-        {
-          id: "c6",
           name: "Encolhimento com Halteres",
           sets: 3,
-          reps: "10",
+          reps: "12",
           rest: 60,
           load: "",
           observations: "Elevação vertical pura (não rodar os ombros)."
         },
         {
-          id: "c7",
-          name: "Rosca Direta Barra",
+          id: "c6",
+          name: "Rosca Direta com Barra W",
           sets: 3,
           reps: "10",
           rest: 60,
           load: "",
-          observations: "Evitar usar embalo do corpo."
+          observations: "Bíceps geral. Evite usar embalo do corpo."
+        },
+        {
+          id: "c7",
+          name: "Rosca Martelo com Halteres",
+          sets: 3,
+          reps: "10-12",
+          rest: 60,
+          load: "",
+          observations: "Foco em braquiorradial (antebraço) e bíceps braquial."
         },
         {
           id: "c8",
-          name: "Rosca Martelo Barra H",
-          sets: 3,
-          reps: "10",
-          rest: 60,
+          name: "Cardio (Corrida/Elíptico)",
+          sets: 1,
+          reps: "25 min",
+          rest: 0,
           load: "",
-          observations: "Foco em braquiorradial (antebraço)."
+          observations: "Intensidade moderada na esteira plana ou transport."
         }
       ]
     },
     {
       id: "D",
-      name: "Treino D - Posterior de Coxa, Glúteos e Coxas",
+      name: "Treino D - Posterior de Coxa, Glúteos e Core",
       exercises: [
         {
           id: "d1",
-          name: "Agachamento Sumô",
-          sets: 3,
-          reps: "12",
-          rest: 120,
+          name: "Stiff com Halteres (ou Barra)",
+          sets: 4,
+          reps: "8-10",
+          rest: 90,
           load: "",
-          observations: "Foco em adutores e glúteos."
+          observations: "Costas retas. Empurre o quadril para trás alongando o posterior."
         },
         {
           id: "d2",
-          name: "Elevação de Quadril Máquina (Hip Thrust)",
+          name: "Flexora Deitada (Mesa Flexora)",
           sets: 3,
           reps: "10-12",
-          rest: 90,
+          rest: 60,
           load: "",
-          observations: "Contração máxima de glúteo no topo."
+          observations: "Manter o quadril colado no banco durante o movimento."
         },
         {
           id: "d3",
-          name: "Flexora Deitado",
-          sets: 3,
+          name: "Elevação Pélvica (Hip Thrust)",
+          sets: 4,
           reps: "10-12",
-          rest: 60,
+          rest: 90,
           load: "",
-          observations: "Isquiotibiais na posição de alongamento."
+          observations: "O melhor construtor de glúteos. Contração máxima no topo."
         },
         {
           id: "d4",
-          name: "Flexora em Pé",
+          name: "Cadeira Abdutora",
           sets: 3,
-          reps: "10",
+          reps: "15",
           rest: 60,
           load: "",
-          observations: "Execução unilateral concentrada."
+          observations: "Foco em glúteo médio. Substitua por cabo se necessário."
         },
         {
           id: "d5",
-          name: "Leg 180 (Foco em Quadríceps)",
-          sets: 3,
-          reps: "10",
-          rest: 90,
-          load: "",
-          observations: "Pés baixos na plataforma para recrutar quadríceps."
-        },
-        {
-          id: "d6",
-          name: "Adução Máquina",
-          sets: 3,
-          reps: "10",
-          rest: 60,
-          load: "",
-          observations: "Foco em adutores internos da coxa."
-        },
-        {
-          id: "d7",
-          name: "Abdominal Infra / Elevação Pernas",
+          name: "Abdominal Infra (Elevação Pernas)",
           sets: 3,
           reps: "15",
           rest: 60,
           load: "",
           observations: "Foco na porção inferior do abdômen."
+        },
+        {
+          id: "d6",
+          name: "Prancha Isométrica",
+          sets: 3,
+          reps: "45-60s",
+          rest: 60,
+          load: "",
+          observations: "Foco em estabilização do core."
+        },
+        {
+          id: "d7",
+          name: "Cardio (Corrida/Elíptico)",
+          sets: 1,
+          reps: "20 min",
+          rest: 0,
+          load: "",
+          observations: "Intensidade moderada na esteira plana ou transport."
         }
       ]
     }
