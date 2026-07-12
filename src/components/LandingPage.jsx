@@ -27,25 +27,19 @@ export default function LandingPage({ deferredPrompt, onEnterApp }) {
   }, [onEnterApp]);
 
   const handleInstallClick = () => {
-    setShowModal(true);
-  };
-
-  const confirmInstallation = () => {
-    if (!deferredPrompt) {
-      onEnterApp();
-      return;
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === "accepted") {
+          console.log("Usuário aceitou a instalação");
+        } else {
+          console.log("Usuário recusou a instalação");
+        }
+        onEnterApp();
+      });
+    } else {
+      setShowModal(true);
     }
-
-    deferredPrompt.prompt();
-    deferredPrompt.userChoice.then((choiceResult) => {
-      if (choiceResult.outcome === "accepted") {
-        console.log("Usuário aceitou a instalação");
-      } else {
-        console.log("Usuário recusou a instalação");
-      }
-      setShowModal(false);
-      onEnterApp();
-    });
   };
 
   if (isInstalled) return null;
@@ -99,22 +93,6 @@ export default function LandingPage({ deferredPrompt, onEnterApp }) {
                 <div className="modal-actions">
                   <button className="btn btn-primary" style={{ width: "100%" }} onClick={() => { setShowModal(false); onEnterApp(); }}>
                     Entendi, Acessar Treino
-                  </button>
-                </div>
-              </>
-            ) : deferredPrompt ? (
-              <>
-                <h3 className="modal-title">Instalar GymRot</h3>
-                <p className="modal-text" style={{ marginBottom: "24px" }}>
-                  O aplicativo será instalado no seu dispositivo e um atalho aparecerá na sua tela inicial para você acessá-lo de forma rápida e offline.
-                </p>
-
-                <div className="modal-actions">
-                  <button className="btn btn-secondary" onClick={() => setShowModal(false)}>
-                    Cancelar
-                  </button>
-                  <button className="btn btn-primary" onClick={confirmInstallation}>
-                    Instalar
                   </button>
                 </div>
               </>
