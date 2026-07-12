@@ -1,0 +1,310 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap');
+
+:root {
+  /* Google Material Design 3 Palette (Light Theme) */
+  --bg-primary: #f8f9fa;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f1f3f4;
+  --border-color: #dadce0;
+  --border-focus: #188038; /* Mapped to Google Green */
+  
+  --color-text-primary: #1f1f1f;
+  --color-text-secondary: #5f6368;
+  --color-text-muted: #80868b;
+  
+  /* Google Brand Colors - Green Theme */
+  --accent-purple: #137333; /* Mapped Google Blue to Google Green */
+  --accent-purple-glow: rgba(19, 115, 51, 0.08);
+  --accent-lime: #137333; /* Google Green (Accessibility Safe) */
+  --accent-lime-glow: rgba(19, 115, 51, 0.15);
+  --accent-cyan: #188038; /* Mapped Secondary Blue to Google Green */
+  
+  --status-success: #137333;
+  --status-warning: #e37400;
+  --status-error: #c5221f;
+  
+  --nav-bg: rgba(255, 255, 255, 0.7);
+  --nav-border: rgba(255, 255, 255, 0.4);
+  
+  --border-hover: rgba(19, 115, 51, 0.2);
+  --accent-active: rgba(19, 115, 51, 0.12);
+  --accent-hover: #10602a;
+  --accent-active-color: #0d4f22;
+  --color-on-accent: #ffffff; /* Texto branco no fundo verde escuro */
+  
+  --font-title: 'Roboto', 'Inter', sans-serif;
+  --font-body: 'Inter', sans-serif;
+}
+
+body.dark-theme {
+  /* Google Material Design 3 Palette (Dark Theme) */
+  --bg-primary: #121212;
+  --bg-secondary: #1e1e1e;
+  --bg-card: #1e1e1e;
+  --bg-card-hover: #2d2d2d;
+  --border-color: #3c4043;
+  --border-focus: #6dd58c; /* Mapped to Google Light Green */
+  
+  --color-text-primary: #e3e3e3;
+  --color-text-secondary: #c4c7c5;
+  --color-text-muted: #8e918f;
+  
+  --accent-purple: #6dd58c; /* Mapped Light Google Blue to Google Light Green */
+  --accent-purple-glow: rgba(109, 213, 140, 0.12);
+  --accent-lime: #6dd58c; /* Light Google Green */
+  --accent-lime-glow: rgba(109, 213, 140, 0.15);
+  --accent-cyan: #81c995; /* Mapped Secondary Blue to Light Google Green */
+  
+  --status-success: #6dd58c;
+  --status-warning: #fdd663;
+  --status-error: #f28b82;
+  
+  --nav-bg: rgba(30, 30, 30, 0.65);
+  --nav-border: rgba(255, 255, 255, 0.08);
+  
+  --border-hover: rgba(109, 213, 140, 0.25);
+  --accent-active: rgba(109, 213, 140, 0.2);
+  --accent-hover: #58b375;
+  --accent-active-color: #4fa168;
+  --color-on-accent: #073819; /* Texto verde escuro no fundo verde claro */
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.5;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+input, textarea {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
+/* Floating Theme Toggle Button */
+.theme-toggle-btn {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 150;
+  box-shadow: 0 1px 3px rgba(60,64,67,0.3);
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.2s;
+}
+
+.theme-toggle-btn:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--accent-purple);
+  transform: scale(1.05);
+}
+
+.theme-toggle-btn:active {
+  transform: scale(0.95);
+}
+
+/* Material Design Cards */
+.glass {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+  transition: box-shadow 0.28s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s;
+}
+
+.glass-interactive {
+  cursor: pointer;
+}
+
+.glass-interactive:hover, .glass-interactive:focus-within {
+  background: var(--bg-card);
+  box-shadow: 0 1px 3px 0 rgba(60,64,67,0.3), 0 4px 8px 3px rgba(60,64,67,0.15);
+  transform: none;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-title);
+  font-weight: 500; /* Google uses lighter/cleaner weights */
+  letter-spacing: -0.01em;
+  color: #1f1f1f;
+}
+
+/* Accessible & Clean Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+  font-family: var(--font-title);
+  font-weight: 500;
+  font-size: 0.95rem;
+  border-radius: 100px; /* Fully rounded Google-style pill buttons */
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s, box-shadow 0.2s;
+  gap: 8px;
+}
+
+/* Primary Button (Google Green) */
+.btn-primary {
+  background-color: var(--accent-purple);
+  color: var(--color-on-accent);
+}
+
+.btn-primary:hover {
+  background-color: var(--accent-hover);
+  box-shadow: 0 1px 3px 0 rgba(60,64,67,0.3), 0 4px 8px 3px rgba(60,64,67,0.15);
+}
+
+.btn-primary:active {
+  background-color: var(--accent-active-color);
+}
+
+/* Lime Button -> Mapped to Google Green */
+.btn-lime {
+  background-color: var(--accent-lime);
+  color: var(--color-on-accent);
+}
+
+.btn-lime:hover {
+  background-color: var(--accent-hover);
+  box-shadow: 0 1px 3px 0 rgba(60,64,67,0.3), 0 4px 8px 3px rgba(60,64,67,0.15);
+}
+
+.btn-lime:active {
+  background-color: var(--accent-active-color);
+}
+
+/* Secondary Button (Google Outline/Flat Style) */
+.btn-secondary {
+  background-color: transparent;
+  color: var(--accent-purple);
+  border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+  background-color: var(--accent-purple-glow);
+  border-color: var(--border-hover);
+}
+
+.btn-secondary:active {
+  background-color: var(--accent-active);
+}
+
+.btn-danger {
+  background-color: transparent;
+  color: var(--status-error);
+  border: 1px solid var(--border-color);
+}
+
+.btn-danger:hover {
+  background-color: rgba(197, 34, 31, 0.04);
+}
+
+/* Clean Google-like Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #bdc1c6;
+}
+
+/* Layout Container */
+.app-container {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 84px;
+  background-color: var(--bg-secondary);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.03);
+}
+
+/* Form Fields */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.88rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.input-field {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: inset 0 0 0 1px var(--border-focus);
+}
