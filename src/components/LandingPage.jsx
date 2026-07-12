@@ -36,47 +36,16 @@ export default function LandingPage({ deferredPrompt, onEnterApp }) {
       return;
     }
 
-    const dynamicManifest = {
-      name: appName.trim() || "GymRot",
-      short_name: appName.trim().substring(0, 12) || "GymRot",
-      description: "Seu acompanhador de treinos de hipertrofia.",
-      start_url: ".",
-      display: "standalone",
-      background_color: "#090d16",
-      theme_color: "#8b5cf6",
-      orientation: "portrait",
-      icons: [
-        {
-          src: "favicon.svg",
-          sizes: "192x192 512x512",
-          type: "image/svg+xml",
-          purpose: "any maskable"
-        }
-      ]
-    };
-
-    // Serialize to Blob and set as manifest Link URL
-    const manifestBlob = new Blob([JSON.stringify(dynamicManifest)], { type: "application/json" });
-    const manifestUrl = URL.createObjectURL(manifestBlob);
-    
-    const manifestElement = document.getElementById("pwa-manifest");
-    if (manifestElement) {
-      manifestElement.setAttribute("href", manifestUrl);
-    }
-
-    // Small delay to allow the browser to register the new manifest before prompt
-    setTimeout(() => {
-      deferredPrompt.prompt();
-      deferredPrompt.userChoice.then((choiceResult) => {
-        if (choiceResult.outcome === "accepted") {
-          console.log("Usuário aceitou a instalação");
-        } else {
-          console.log("Usuário recusou a instalação");
-        }
-        setShowModal(false);
-        onEnterApp();
-      });
-    }, 150);
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then((choiceResult) => {
+      if (choiceResult.outcome === "accepted") {
+        console.log("Usuário aceitou a instalação");
+      } else {
+        console.log("Usuário recusou a instalação");
+      }
+      setShowModal(false);
+      onEnterApp();
+    });
   };
 
   if (isInstalled) return null;
@@ -135,31 +104,17 @@ export default function LandingPage({ deferredPrompt, onEnterApp }) {
               </>
             ) : deferredPrompt ? (
               <>
-                <h3 className="modal-title">Personalize o seu App</h3>
-                <p className="modal-text">
-                  Escolha o nome que será exibido na tela inicial do seu celular:
+                <h3 className="modal-title">Instalar GymRot</h3>
+                <p className="modal-text" style={{ marginBottom: "24px" }}>
+                  O aplicativo será instalado no seu dispositivo e um atalho aparecerá na sua tela inicial para você acessá-lo de forma rápida e offline.
                 </p>
-                
-                <div className="form-group">
-                  <label className="form-label" htmlFor="custom-app-name">Nome do Aplicativo</label>
-                  <input
-                    id="custom-app-name"
-                    type="text"
-                    className="input-field"
-                    value={appName}
-                    onChange={(e) => setAppName(e.target.value)}
-                    placeholder="Ex: Treino do Wagner"
-                    maxLength={20}
-                    autoFocus
-                  />
-                </div>
 
                 <div className="modal-actions">
                   <button className="btn btn-secondary" onClick={() => setShowModal(false)}>
                     Cancelar
                   </button>
-                  <button className="btn btn-primary" onClick={confirmInstallation} disabled={!appName.trim()}>
-                    Confirmar & Instalar
+                  <button className="btn btn-primary" onClick={confirmInstallation}>
+                    Instalar
                   </button>
                 </div>
               </>
