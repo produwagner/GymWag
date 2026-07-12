@@ -739,6 +739,7 @@ export default function RoutineManager({ workoutData, onUpdateWorkoutData }) {
           justify-content: center;
           color: var(--color-text-muted);
           padding-right: 4px;
+          flex-shrink: 0;
         }
 
         .drag-icon {
@@ -750,6 +751,7 @@ export default function RoutineManager({ workoutData, onUpdateWorkoutData }) {
           flex-direction: column;
           gap: 4px;
           flex: 1;
+          min-width: 0;
         }
 
         .ex-name {
@@ -778,6 +780,7 @@ export default function RoutineManager({ workoutData, onUpdateWorkoutData }) {
           display: flex;
           align-items: center;
           gap: 8px;
+          flex-shrink: 0;
         }
 
         .btn-icon {
