@@ -3,7 +3,7 @@ import { BarbellIcon, CheckIcon } from "./Icons";
 
 export default function LandingPage({ deferredPrompt, onEnterApp }) {
   const [showModal, setShowModal] = useState(false);
-  const [appName, setAppName] = useState("GymRot");
+  const [appName, setAppName] = useState("GymWag");
   const [isIOS, setIsIOS] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
@@ -74,13 +74,13 @@ export default function LandingPage({ deferredPrompt, onEnterApp }) {
                 <CheckIcon size={36} className="landing-logo-icon" />
               </div>
               <h1 className="landing-title">Instalado!</h1>
-              <p className="landing-subtitle" style={{ color: "var(--accent-lime)" }}>O GymRot está pronto.</p>
+              <p className="landing-subtitle" style={{ color: "var(--accent-lime)" }}>O GymWag está pronto.</p>
             </div>
 
             <p className="landing-description" style={{ marginBottom: "30px", fontSize: "0.95rem" }}>
               O aplicativo foi instalado com sucesso no seu dispositivo.
               <br /><br />
-              Você já pode fechar esta aba do navegador. Abra o GymRot diretamente pelo ícone criado na tela inicial do seu aparelho para começar a treinar!
+              Você já pode fechar esta aba do navegador. Abra o GymWag diretamente pelo ícone criado na tela inicial do seu aparelho para começar a treinar!
             </p>
 
             <div className="landing-actions">
@@ -96,7 +96,7 @@ export default function LandingPage({ deferredPrompt, onEnterApp }) {
                 <BarbellIcon size={36} className="landing-logo-icon" />
               </div>
               <h1 className="landing-title">Instalando...</h1>
-              <p className="landing-subtitle">O GymRot está chegando!</p>
+              <p className="landing-subtitle">O GymWag está chegando!</p>
             </div>
 
             <p className="landing-description" style={{ marginBottom: "30px", fontSize: "0.95rem" }}>
@@ -182,7 +182,7 @@ export default function LandingPage({ deferredPrompt, onEnterApp }) {
                   ) : (
                     <>
                       <li>Procure o ícone de <strong>Instalação</strong> (um monitor com seta para baixo ou símbolo de <span className="ios-icon">+</span>) no lado direito da barra de endereços do seu navegador.</li>
-                      <li>Ou clique no menu do navegador (três pontos <span className="ios-icon">⋮</span>) e selecione <strong>Instalar GymRot...</strong> ou <strong>Instalar página como aplicativo</strong>.</li>
+                      <li>Ou clique no menu do navegador (três pontos <span className="ios-icon">⋮</span>) e selecione <strong>Instalar GymWag...</strong> ou <strong>Instalar página como aplicativo</strong>.</li>
                     </>
                   )}
                 </ol>
