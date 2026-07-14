@@ -17,7 +17,7 @@ import {
   appendProfile, 
   appendWorkoutSession, 
   syncRoutines,
-  importFromGoogleSheets
+  syncBidirectional
 } from "./services/googleDriveService";
 
 export default function App() {
@@ -358,9 +358,19 @@ export default function App() {
     setProfileHistory([]);
   };
 
-  const handleFullSync = async () => {
+  const handleUpdateWorkoutData = (newDataOrFn) => {
+    setWorkoutData((prev) => {
+      const nextData = typeof newDataOrFn === "function" ? newDataOrFn(prev) : newDataOrFn;
+      return {
+        ...nextData,
+        lastUpdated: new Date().toISOString()
+      };
+    });
+  };
+
+  const handleSync = async () => {
     const token = await getValidToken();
-    await performFullSync(
+    const result = await syncBidirectional(
       token,
       googleSyncSettings.spreadsheetId,
       profileHistory,
@@ -369,23 +379,16 @@ export default function App() {
       history,
       handleTokenExpired
     );
-  };
+    if (result) {
+      setHistory(result.history);
+      setProfileHistory(result.profileHistory);
+      setProfile(result.profile);
+      setWorkoutData(result.workoutData);
 
-  const handlePullSync = async () => {
-    const token = await getValidToken();
-    const data = await importFromGoogleSheets(
-      token,
-      googleSyncSettings.spreadsheetId,
-      handleTokenExpired
-    );
-    if (data) {
-      setHistory(data.history);
-      setProfileHistory(data.profileHistory);
-      setProfile(data.profile);
-      
-      localStorage.setItem("gymwag_history", JSON.stringify(data.history));
-      localStorage.setItem("gymwag_profile_history", JSON.stringify(data.profileHistory));
-      localStorage.setItem("gymwag_profile", JSON.stringify(data.profile));
+      localStorage.setItem("gymwag_history", JSON.stringify(result.history));
+      localStorage.setItem("gymwag_profile_history", JSON.stringify(result.profileHistory));
+      localStorage.setItem("gymwag_profile", JSON.stringify(result.profile));
+      localStorage.setItem("gymwag_workout_data", JSON.stringify(result.workoutData));
     }
   };
 
@@ -426,7 +429,7 @@ export default function App() {
       };
     });
 
-    setWorkoutData((prev) => ({
+    handleUpdateWorkoutData((prev) => ({
       ...prev,
       routines: updatedRoutines
     }));
@@ -476,7 +479,7 @@ export default function App() {
         return (
           <RoutineManager
             workoutData={workoutData}
-            onUpdateWorkoutData={setWorkoutData}
+            onUpdateWorkoutData={handleUpdateWorkoutData}
           />
         );
       case "history":
@@ -497,8 +500,7 @@ export default function App() {
             onToggleTheme={toggleTheme}
             googleSyncSettings={googleSyncSettings}
             onUpdateGoogleSyncSettings={setGoogleSyncSettings}
-            onSyncAll={handleFullSync}
-            onPullSync={handlePullSync}
+            onSync={handleSync}
             workoutData={workoutData}
             history={history}
             onTriggerExpiredSession={handleTokenExpired}

@@ -296,8 +296,8 @@ async function initializeSpreadsheetLayout(token, spreadsheetId, onTokenExpired)
           values: [["Data de Sincronização", "Nome", "Peso (kg)", "Altura (cm)"]]
         },
         {
-          range: "Fichas!A1:F1",
-          values: [["ID Ficha", "Nome da Ficha", "Exercício", "Séries", "Repetições", "Carga Padrão (kg)"]]
+          range: "Fichas!A1:G1",
+          values: [["ID Ficha", "Nome da Ficha", "Exercício", "Séries", "Repetições", "Carga Padrão (kg)", "Última Atualização"]]
         },
         {
           range: "Histórico de Treinos!A1:K1",
@@ -333,26 +333,28 @@ export async function appendProfile(token, spreadsheetId, profileData, onTokenEx
  */
 export async function syncRoutines(token, spreadsheetId, workoutData, onTokenExpired) {
   // 1. Clear previous routine rows
-  const urlClear = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Fichas!A2:F1000:clear`;
+  const urlClear = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Fichas!A2:G1000:clear`;
   await apiFetch(urlClear, { method: "POST" }, token, onTokenExpired);
 
   // 2. Format routines to rows
   const rows = [];
   if (workoutData && workoutData.routines) {
-    for (const routine of workoutData.routines) {
+    workoutData.routines.forEach((routine, rIdx) => {
       if (routine.exercises) {
-        for (const ex of routine.exercises) {
+        routine.exercises.forEach((ex, exIdx) => {
+          const isFirstRow = rIdx === 0 && exIdx === 0;
           rows.push([
             routine.id,
             routine.name,
             ex.name,
             ex.sets,
             ex.reps,
-            ex.load || ""
+            ex.load || "",
+            isFirstRow ? (workoutData.lastUpdated || new Date().toISOString()) : ""
           ]);
-        }
+        });
       }
-    }
+    });
   }
 
   if (rows.length === 0) return;
@@ -520,19 +522,22 @@ export async function performFullSync(token, spreadsheetId, profileHistory, curr
 }
 
 /**
- * Imports history, profiles, and routines from Google Sheets.
+ * Performs a smart bidirectional synchronization.
+ * Pulls, merges history/profiles/routines, and writes back the resolved state.
  */
-export async function importFromGoogleSheets(token, spreadsheetId, onTokenExpired) {
-  const urlHistory = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Histórico de Treinos!A2:K10000`;
-  const resHistory = await apiFetch(urlHistory, {}, token, onTokenExpired);
-  const dataHistory = await resHistory.json();
-  const rowsHistory = dataHistory.values || [];
+export async function syncBidirectional(token, spreadsheetId, profileHistory, currentProfile, workoutData, history, onTokenExpired) {
+  console.log("Iniciando sincronização inteligente bidirecional...");
 
-  const urlProfile = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Perfil!A2:D10000`;
-  const resProfile = await apiFetch(urlProfile, {}, token, onTokenExpired);
-  const dataProfile = await resProfile.json();
-  const rowsProfile = dataProfile.values || [];
+  // 1. Fetch all sheet ranges in a single batchGet call
+  const urlGet = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values:batchGet?ranges=Perfil!A2:D10000&ranges=Fichas!A2:G1000&ranges=Histórico de Treinos!A2:K10000`;
+  const resGet = await apiFetch(urlGet, {}, token, onTokenExpired);
+  const dataGet = await resGet.json();
 
+  const rowsProfile = dataGet.valueRanges[0].values || [];
+  const rowsRoutines = dataGet.valueRanges[1].values || [];
+  const rowsHistory = dataGet.valueRanges[2].values || [];
+
+  // Helper to parse dd/mm/yyyy, hh:mm:ss
   const parseDateStr = (dateStr) => {
     if (!dateStr) return new Date();
     const parts = dateStr.trim().split(/[\s,]+/);
@@ -550,6 +555,37 @@ export async function importFromGoogleSheets(token, spreadsheetId, onTokenExpire
     return new Date(year, month, day, hour, minute, second);
   };
 
+  // 2. Profile History Smart Merge
+  const parsedProfileHistory = rowsProfile.map(row => {
+    const [date, name, weight, height] = row;
+    if (!date) return null;
+    return {
+      date: parseDateStr(date).toISOString(),
+      name: name || "",
+      weight: weight ? parseFloat(weight) : "",
+      height: height ? parseFloat(height) : ""
+    };
+  }).filter(Boolean);
+
+  const profileMap = {};
+  profileHistory.forEach(item => {
+    const key = new Date(item.date).toISOString();
+    profileMap[key] = item;
+  });
+  parsedProfileHistory.forEach(item => {
+    const key = new Date(item.date).toISOString();
+    profileMap[key] = item;
+  });
+
+  const mergedProfileHistory = Object.values(profileMap).sort((a, b) => new Date(b.date) - new Date(a.date));
+  const latestProfile = mergedProfileHistory[0] || { name: "", weight: "", height: "" };
+  const mergedProfile = {
+    name: latestProfile.name || currentProfile.name || "",
+    weight: latestProfile.weight || currentProfile.weight || "",
+    height: latestProfile.height || currentProfile.height || ""
+  };
+
+  // 3. Workout History Smart Merge
   const sessionsMap = {};
   rowsHistory.forEach(row => {
     const [date, routineId, routineName, exName, exSets, setNum, load, reps, completed, duration, notes] = row;
@@ -585,28 +621,162 @@ export async function importFromGoogleSheets(token, spreadsheetId, onTokenExpire
     });
   });
 
-  const parsedHistory = Object.values(sessionsMap).sort((a, b) => new Date(b.date) - new Date(a.date));
+  const sheetHistoryList = Object.values(sessionsMap);
+  const historyMap = {};
+  history.forEach(session => {
+    const key = new Date(session.date).toISOString();
+    historyMap[key] = session;
+  });
+  sheetHistoryList.forEach(session => {
+    const key = new Date(session.date).toISOString();
+    historyMap[key] = session;
+  });
 
-  const parsedProfileHistory = rowsProfile.map(row => {
-    const [date, name, weight, height] = row;
-    if (!date) return null;
+  const mergedHistory = Object.values(historyMap).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  // 4. Routines (Fichas) Smart Merge
+  const sheetRoutinesTimestamp = rowsRoutines[0] && rowsRoutines[0][6] ? rowsRoutines[0][6] : null;
+  const localRoutinesTimestamp = workoutData.lastUpdated || null;
+
+  let finalWorkoutData = { ...workoutData };
+  let shouldRewriteSheetRoutines = false;
+
+  const reconstructRoutinesFromRows = (rows, timestamp) => {
+    const routinesMap = {};
+    rows.forEach(row => {
+      const [routineId, routineName, exName, exSets, exReps, exLoad] = row;
+      if (!routineId) return;
+
+      if (!routinesMap[routineId]) {
+        routinesMap[routineId] = {
+          id: routineId,
+          name: routineName,
+          exercises: []
+        };
+      }
+
+      routinesMap[routineId].exercises.push({
+        name: exName,
+        sets: parseInt(exSets) || 1,
+        reps: exReps || "",
+        load: exLoad || "",
+        rest: 60
+      });
+    });
+
     return {
-      date: parseDateStr(date).toISOString(),
-      name: name || "",
-      weight: weight ? parseFloat(weight) : "",
-      height: height ? parseFloat(height) : ""
+      routines: Object.values(routinesMap),
+      lastUpdated: timestamp
     };
-  }).filter(Boolean).sort((a, b) => new Date(b.date) - new Date(a.date));
+  };
 
-  const latestProfile = parsedProfileHistory[0] || { name: "", weight: "", height: "" };
+  if (!sheetRoutinesTimestamp) {
+    // Sheet routines don't have timestamp. Overwrite sheet.
+    shouldRewriteSheetRoutines = true;
+  } else if (!localRoutinesTimestamp) {
+    // Local routines don't have timestamp. Download from sheet.
+    finalWorkoutData = reconstructRoutinesFromRows(rowsRoutines, sheetRoutinesTimestamp);
+  } else {
+    const sheetTime = new Date(sheetRoutinesTimestamp).getTime();
+    const localTime = new Date(localRoutinesTimestamp).getTime();
+    if (localTime > sheetTime) {
+      // Local changes are newer. Overwrite sheet.
+      shouldRewriteSheetRoutines = true;
+    } else {
+      // Sheet changes are newer. Download from sheet.
+      finalWorkoutData = reconstructRoutinesFromRows(rowsRoutines, sheetRoutinesTimestamp);
+    }
+  }
+
+  // 5. Construct final rows to update Google Sheets
+  // Prepare profile rows
+  const profileRows = mergedProfileHistory.map(item => {
+    const dStr = new Date(item.date).toLocaleString("pt-BR");
+    return [dStr, item.name || "", item.weight || "", item.height || ""];
+  });
+
+  // Prepare routine rows (include timestamp on first row)
+  const routineRows = [];
+  finalWorkoutData.routines.forEach((routine, rIdx) => {
+    if (routine.exercises) {
+      routine.exercises.forEach((ex, exIdx) => {
+        const isFirstRow = rIdx === 0 && exIdx === 0;
+        routineRows.push([
+          routine.id,
+          routine.name,
+          ex.name,
+          ex.sets,
+          ex.reps,
+          ex.load || "",
+          isFirstRow ? (finalWorkoutData.lastUpdated || new Date().toISOString()) : ""
+        ]);
+      });
+    }
+  });
+
+  // Prepare workout history rows (reversed so oldest are appended first)
+  const workoutRows = [];
+  const sortedHistoryForSheet = [...mergedHistory].reverse();
+  sortedHistoryForSheet.forEach(session => {
+    const dStr = new Date(session.date).toLocaleString("pt-BR");
+    if (session.exercises) {
+      session.exercises.forEach(ex => {
+        if (ex.setsData) {
+          ex.setsData.forEach(set => {
+            workoutRows.push([
+              dStr,
+              session.routineId,
+              session.routineName,
+              ex.name,
+              ex.sets,
+              set.setNum,
+              set.load || "",
+              set.reps || "",
+              set.completed ? "Sim" : "Não",
+              session.duration || "",
+              session.notes || ""
+            ]);
+          });
+        }
+      });
+    }
+  });
+
+  // 6. Clear and Batch Update Google Sheets
+  const urlClear = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values:batchClear`;
+  await apiFetch(urlClear, {
+    method: "POST",
+    body: JSON.stringify({
+      ranges: [
+        "Perfil!A2:D10000",
+        "Fichas!A2:G1000",
+        "Histórico de Treinos!A2:K10000"
+      ]
+    })
+  }, token, onTokenExpired);
+
+  const urlUpdate = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values:batchUpdate`;
+  const updates = [];
+  if (profileRows.length > 0) updates.push({ range: "Perfil!A2", values: profileRows });
+  if (routineRows.length > 0) updates.push({ range: "Fichas!A2", values: routineRows });
+  if (workoutRows.length > 0) updates.push({ range: "Histórico de Treinos!A2", values: workoutRows });
+
+  if (updates.length > 0) {
+    await apiFetch(urlUpdate, {
+      method: "POST",
+      body: JSON.stringify({
+        valueInputOption: "USER_ENTERED",
+        data: updates
+      })
+    }, token, onTokenExpired);
+  }
+
+  console.log("Sincronização bidirecional concluída com sucesso!");
 
   return {
-    history: parsedHistory,
-    profileHistory: parsedProfileHistory,
-    profile: {
-      name: latestProfile.name || "",
-      weight: latestProfile.weight || "",
-      height: latestProfile.height || ""
-    }
+    history: mergedHistory,
+    profileHistory: mergedProfileHistory,
+    profile: mergedProfile,
+    workoutData: finalWorkoutData
   };
 }
