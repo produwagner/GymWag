@@ -110,7 +110,7 @@ export default function SyncStatusIndicator({ status, lastSync, isOnline, onSync
       <style>{`
         .sync-indicator-container {
           position: absolute;
-          top: 16px;
+          top: 27px;
           right: 16px;
           z-index: 100;
         }
