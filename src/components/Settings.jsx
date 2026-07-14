@@ -16,6 +16,7 @@ import {
   getOrCreateSpreadsheet,
   performFullSync
 } from "../services/googleDriveService";
+import { GOOGLE_CLIENT_ID } from "../config";
 
 export default function Settings({
   profile,
@@ -44,7 +45,7 @@ export default function Settings({
   const [syncError, setSyncError] = useState("");
   const [syncSuccess, setSyncSuccess] = useState(false);
   
-  const envClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+  const envClientId = GOOGLE_CLIENT_ID || import.meta.env.VITE_GOOGLE_CLIENT_ID;
   const activeClientId = envClientId || customClientId;
 
   // Track profile prop changes

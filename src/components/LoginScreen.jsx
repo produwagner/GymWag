@@ -14,6 +14,7 @@ import {
   getOrCreateFolder,
   getOrCreateSpreadsheet
 } from "../services/googleDriveService";
+import { GOOGLE_CLIENT_ID } from "../config";
 
 export default function LoginScreen({
   theme,
@@ -28,7 +29,7 @@ export default function LoginScreen({
   const [isConnecting, setIsConnecting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const envClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+  const envClientId = GOOGLE_CLIENT_ID || import.meta.env.VITE_GOOGLE_CLIENT_ID;
   const activeClientId = envClientId || customClientId;
 
   const handleConnectGoogle = () => {

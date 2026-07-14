@@ -7,6 +7,7 @@ import RoutineManager from "./components/RoutineManager";
 import History from "./components/History";
 import Settings from "./components/Settings";
 import LoginScreen from "./components/LoginScreen";
+import { GOOGLE_CLIENT_ID } from "./config";
 import { BarbellIcon, CalendarIcon, HistoryIcon, UserIcon, ClipboardIcon } from "./components/Icons";
 import { 
   loadGoogleGIS, 
@@ -183,7 +184,7 @@ export default function App() {
   useEffect(() => {
     loadGoogleGIS()
       .then(() => {
-        const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || googleSyncSettings.clientId;
+        const clientId = GOOGLE_CLIENT_ID || import.meta.env.VITE_GOOGLE_CLIENT_ID || googleSyncSettings.clientId;
         if (googleSyncSettings.connected && clientId) {
           const windowGoogleInterval = setInterval(() => {
             if (window.google && window.google.accounts) {
@@ -241,7 +242,7 @@ export default function App() {
 
   // Get valid token (renewing silently if expired)
   const getValidToken = async () => {
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || googleSyncSettings.clientId;
+    const clientId = GOOGLE_CLIENT_ID || import.meta.env.VITE_GOOGLE_CLIENT_ID || googleSyncSettings.clientId;
     if (!googleSyncSettings.connected || !clientId) {
       throw new Error("Google Drive não está conectado.");
     }
