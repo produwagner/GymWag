@@ -3,6 +3,11 @@ import { CheckIcon, ClockIcon, InfoIcon, PlayIcon } from "./Icons";
 import Timer from "./Timer";
 import { exerciseGifs } from "../data/exerciseGifs";
 
+// Helper to check if exercise is cardio
+const isCardioEx = (name) => {
+  return /cardio|corrida|trote|esteira|caminhada|bike|bicicleta|elíptico|running|spinning/i.test(name);
+};
+
 export default function ActiveWorkout({ routine, history, onSaveWorkout, onCancelWorkout }) {
   const [exercisesState, setExercisesState] = useState([]);
   const [activeTimer, setActiveTimer] = useState(null);
@@ -35,13 +40,11 @@ export default function ActiveWorkout({ routine, history, onSaveWorkout, onCance
 
     // Default initialization: look up previous loads from history for each exercise in this routine
     const getPreviousLoad = (exerciseName) => {
-      // Find the most recent workout in history that contains this exercise
       for (const session of history) {
         const found = session.exercises?.find(
           (ex) => ex.name.toLowerCase() === exerciseName.toLowerCase()
         );
         if (found && found.setsData) {
-          // Get the load of the first set (or maximum load)
           const loads = found.setsData.map(s => s.load).filter(Boolean);
           if (loads.length > 0) return loads[0];
         }
@@ -52,14 +55,15 @@ export default function ActiveWorkout({ routine, history, onSaveWorkout, onCance
     // Initialize state for each exercise and its sets
     const initialExercises = routine.exercises.map((ex) => {
       const prevLoad = getPreviousLoad(ex.name);
+      const isCardio = isCardioEx(ex.name);
       
       return {
         ...ex,
-        // Create an array for sets data
         setsData: Array.from({ length: ex.sets }).map((_, idx) => ({
           setNum: idx + 1,
           load: prevLoad || ex.load || "",
-          reps: ex.reps.includes("-") ? ex.reps.split("-")[1] : ex.reps, // take upper range if range
+          // If cardio, default to "Corrida" instead of reps number, otherwise parse reps
+          reps: isCardio ? "Corrida" : (ex.reps.includes("-") ? ex.reps.split("-")[1] : ex.reps),
           completed: false
         }))
       };
@@ -94,7 +98,6 @@ export default function ActiveWorkout({ routine, history, onSaveWorkout, onCance
 
     // If marked completed, start the rest timer
     if (newCompletedState) {
-      // Find if this is the last set of the last exercise
       const isLastExercise = exIdx === exercisesState.length - 1;
       const isLastSet = setIdx === updated[exIdx].setsData.length - 1;
       
@@ -110,6 +113,64 @@ export default function ActiveWorkout({ routine, history, onSaveWorkout, onCance
   const handleSetDataChange = (exIdx, setIdx, field, value) => {
     const updated = [...exercisesState];
     updated[exIdx].setsData[setIdx][field] = value;
+    setExercisesState(updated);
+  };
+
+  // Adjust values using buttons (+ / -)
+  const adjustSetValue = (exIdx, setIdx, field, delta) => {
+    const updated = [...exercisesState];
+    const currentValue = parseFloat(updated[exIdx].setsData[setIdx][field]) || 0;
+    const newValue = Math.max(0, currentValue + delta);
+    
+    updated[exIdx].setsData[setIdx][field] = field === "reps"
+      ? Math.round(newValue).toString()
+      : (Number.isInteger(newValue) ? newValue.toString() : newValue.toFixed(1));
+
+    setExercisesState(updated);
+  };
+
+  // Add a new set to the exercise card
+  const handleAddSet = (exIdx) => {
+    const updated = [...exercisesState];
+    const sets = updated[exIdx].setsData;
+    const lastSet = sets[sets.length - 1];
+    const isCardio = isCardioEx(updated[exIdx].name);
+
+    sets.push({
+      setNum: sets.length + 1,
+      load: lastSet ? lastSet.load : "",
+      reps: lastSet ? lastSet.reps : (isCardio ? "Corrida" : ""),
+      completed: false
+    });
+
+    updated[exIdx].sets = sets.length;
+    setExercisesState(updated);
+  };
+
+  // Remove the last set from the exercise card
+  const handleRemoveSet = (exIdx) => {
+    const updated = [...exercisesState];
+    const sets = updated[exIdx].setsData;
+    if (sets.length > 1) {
+      sets.pop();
+      updated[exIdx].sets = sets.length;
+      setExercisesState(updated);
+    }
+  };
+
+  // Swap exercise orders in the middle of a workout
+  const moveExercise = (index, direction) => {
+    if (direction === "up" && index === 0) return;
+    if (direction === "down" && index === exercisesState.length - 1) return;
+
+    const updated = [...exercisesState];
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+
+    // Swap elements
+    const temp = updated[index];
+    updated[index] = updated[targetIndex];
+    updated[targetIndex] = temp;
+
     setExercisesState(updated);
   };
 
@@ -172,97 +233,199 @@ export default function ActiveWorkout({ routine, history, onSaveWorkout, onCance
       {!isFinishing ? (
         <>
           <div className="exercises-list-wrapper">
-            {exercisesState.map((ex, exIdx) => (
-              <div key={ex.id} className="exercise-workout-card glass">
-                <div className="ex-card-header">
-                  <div className="ex-card-title-container">
-                    <h4 className="ex-card-title">{ex.name}</h4>
-                    {exerciseGifs[ex.name] && (
-                      <button
-                        className={`btn-show-gif ${expandedGifExId === ex.id ? "active" : ""}`}
-                        onClick={() => toggleGif(ex.id)}
-                        title="Ver execução em 3D"
-                        type="button"
-                      >
-                        <PlayIcon size={12} />
-                      </button>
-                    )}
-                  </div>
-                  <div className="ex-card-meta">
-                    <ClockIcon size={14} /> <span>{ex.rest}s descanso</span>
-                  </div>
-                </div>
-
-                {ex.observations && (
-                  <div className="ex-card-observations">
-                    <InfoIcon size={14} /> <span>{ex.observations}</span>
-                  </div>
-                )}
-
-                {expandedGifExId === ex.id && exerciseGifs[ex.name] && (
-                  <div className="exercise-gif-drawer animate-slide-down">
-                    <img
-                      src={exerciseGifs[ex.name]}
-                      alt={ex.name}
-                      className="exercise-gif"
-                      loading="lazy"
-                    />
-                  </div>
-                )}
-
-                {/* Sets Header */}
-                <div className="sets-grid-header">
-                  <span>SÉRIE</span>
-                  <span>CARGA (KG)</span>
-                  <span>REPETIÇÕES</span>
-                  <span>STATUS</span>
-                </div>
-
-                {/* Sets Rows */}
-                <div className="sets-rows">
-                  {ex.setsData.map((set, setIdx) => (
-                    <div key={setIdx} className={`set-row ${set.completed ? "completed" : ""}`}>
-                      <span className="set-number-label">{set.setNum}ª</span>
-                      
-                      <div className="input-with-suffix">
-                        <input
-                          type="number"
-                          pattern="[0-9]*"
-                          inputMode="numeric"
-                          className="set-input load"
-                          value={set.load}
-                          disabled={set.completed}
-                          onChange={(e) => handleSetDataChange(exIdx, setIdx, "load", e.target.value)}
-                          placeholder="0"
-                        />
-                        <span className="suffix">kg</span>
-                      </div>
-
-                      <div className="input-with-suffix">
-                        <input
-                          type="number"
-                          pattern="[0-9]*"
-                          inputMode="numeric"
-                          className="set-input reps"
-                          value={set.reps}
-                          disabled={set.completed}
-                          onChange={(e) => handleSetDataChange(exIdx, setIdx, "reps", e.target.value)}
-                          placeholder="0"
-                        />
-                        <span className="suffix">reps</span>
-                      </div>
-
-                      <button
-                        className={`btn-check-set ${set.completed ? "checked" : ""}`}
-                        onClick={() => handleSetCheck(exIdx, setIdx)}
-                      >
-                        <CheckIcon size={16} />
-                      </button>
+            {exercisesState.map((ex, exIdx) => {
+              const isCardio = isCardioEx(ex.name);
+              return (
+                <div key={ex.id} className="exercise-workout-card glass">
+                  <div className="ex-card-header">
+                    <div className="ex-card-title-container">
+                      <h4 className="ex-card-title">{ex.name}</h4>
+                      {exerciseGifs[ex.name] && (
+                        <button
+                          className={`btn-show-gif ${expandedGifExId === ex.id ? "active" : ""}`}
+                          onClick={() => toggleGif(ex.id)}
+                          title="Ver execução em 3D"
+                          type="button"
+                        >
+                          <PlayIcon size={12} />
+                        </button>
+                      )}
                     </div>
-                  ))}
+                    
+                    <div className="ex-card-header-actions">
+                      {/* Exercise Reordering Buttons */}
+                      <div className="ex-order-buttons">
+                        <button
+                          type="button"
+                          className="btn-order-move"
+                          onClick={() => moveExercise(exIdx, "up")}
+                          disabled={exIdx === 0}
+                          title="Mover exercício para cima"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-order-move"
+                          onClick={() => moveExercise(exIdx, "down")}
+                          disabled={exIdx === exercisesState.length - 1}
+                          title="Mover exercício para baixo"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </button>
+                      </div>
+                      
+                      <div className="ex-card-meta">
+                        <ClockIcon size={14} /> <span>{ex.rest}s descanso</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {ex.observations && (
+                    <div className="ex-card-observations">
+                      <InfoIcon size={14} /> <span>{ex.observations}</span>
+                    </div>
+                  )}
+
+                  {expandedGifExId === ex.id && exerciseGifs[ex.name] && (
+                    <div className="exercise-gif-drawer animate-slide-down">
+                      <img
+                        src={exerciseGifs[ex.name]}
+                        alt={ex.name}
+                        className="exercise-gif"
+                        loading="lazy"
+                      />
+                    </div>
+                  )}
+
+                  {/* Grid Headers (Adaptable for Cardio vs Strength) */}
+                  <div className="sets-grid-header">
+                    <span>SÉRIE</span>
+                    <span>{isCardio ? "DISTÂNCIA" : "CARGA"}</span>
+                    <span>{isCardio ? "TIPO" : "REPETIÇÕES"}</span>
+                    <span>STATUS</span>
+                  </div>
+
+                  {/* Sets Rows */}
+                  <div className="sets-rows">
+                    {ex.setsData.map((set, setIdx) => (
+                      <div key={setIdx} className={`set-row ${set.completed ? "completed" : ""}`}>
+                        <span className="set-number-label">{set.setNum}ª</span>
+                        
+                        {/* Weight or Distance Spinner Input */}
+                        <div className="input-spinner-container">
+                          <button 
+                            type="button" 
+                            className="btn-spinner dec" 
+                            disabled={set.completed}
+                            onClick={() => adjustSetValue(exIdx, setIdx, "load", isCardio ? -0.1 : -1)}
+                          >
+                            -
+                          </button>
+                          <div className="input-with-suffix">
+                            <input
+                              type="number"
+                              step={isCardio ? "0.1" : "1"}
+                              pattern="[0-9]*"
+                              inputMode="decimal"
+                              className="set-input load"
+                              value={set.load}
+                              disabled={set.completed}
+                              onChange={(e) => handleSetDataChange(exIdx, setIdx, "load", e.target.value)}
+                              placeholder="0"
+                            />
+                            <span className="suffix">{isCardio ? "km" : "kg"}</span>
+                          </div>
+                          <button 
+                            type="button" 
+                            className="btn-spinner inc" 
+                            disabled={set.completed}
+                            onClick={() => adjustSetValue(exIdx, setIdx, "load", isCardio ? 0.1 : 1)}
+                          >
+                            +
+                          </button>
+                        </div>
+
+                        {/* Reps Spinner or Cardio Type Select */}
+                        {isCardio ? (
+                          <div className="cardio-type-container">
+                            <select
+                              className="set-input reps cardio-select"
+                              value={set.reps || "Corrida"}
+                              disabled={set.completed}
+                              onChange={(e) => handleSetDataChange(exIdx, setIdx, "reps", e.target.value)}
+                            >
+                              <option value="Corrida">Corrida</option>
+                              <option value="Caminhada">Caminhada</option>
+                              <option value="Trote">Trote</option>
+                              <option value="Misto">Misto</option>
+                            </select>
+                          </div>
+                        ) : (
+                          <div className="input-spinner-container">
+                            <button 
+                              type="button" 
+                              className="btn-spinner dec" 
+                              disabled={set.completed}
+                              onClick={() => adjustSetValue(exIdx, setIdx, "reps", -1)}
+                            >
+                              -
+                            </button>
+                            <div className="input-with-suffix">
+                              <input
+                                type="number"
+                                pattern="[0-9]*"
+                                inputMode="numeric"
+                                className="set-input reps"
+                                value={set.reps}
+                                disabled={set.completed}
+                                onChange={(e) => handleSetDataChange(exIdx, setIdx, "reps", e.target.value)}
+                                placeholder="0"
+                              />
+                              <span className="suffix">reps</span>
+                            </div>
+                            <button 
+                              type="button" 
+                              className="btn-spinner inc" 
+                              disabled={set.completed}
+                              onClick={() => adjustSetValue(exIdx, setIdx, "reps", 1)}
+                            >
+                              +
+                            </button>
+                          </div>
+                        )}
+
+                        <button
+                          className={`btn-check-set ${set.completed ? "checked" : ""}`}
+                          onClick={() => handleSetCheck(exIdx, setIdx)}
+                        >
+                          <CheckIcon size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Add / Delete Set buttons */}
+                  <div className="sets-actions-row">
+                    <button 
+                      type="button"
+                      className="btn-set-action remove" 
+                      onClick={() => handleRemoveSet(exIdx)} 
+                      disabled={ex.setsData.length <= 1}
+                    >
+                      - Remover Série
+                    </button>
+                    <button 
+                      type="button"
+                      className="btn-set-action add" 
+                      onClick={() => handleAddSet(exIdx)}
+                    >
+                      + Adicionar Série
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <button className="btn btn-lime finish-workout-btn" onClick={handleFinishWorkout}>
@@ -371,6 +534,45 @@ export default function ActiveWorkout({ routine, history, onSaveWorkout, onCance
           max-width: 70%;
         }
 
+        .ex-card-header-actions {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 6px;
+          flex-shrink: 0;
+        }
+
+        .ex-order-buttons {
+          display: flex;
+          gap: 4px;
+        }
+
+        .btn-order-move {
+          background: var(--bg-primary);
+          border: 1px solid var(--border-color);
+          color: var(--color-text-secondary);
+          border-radius: 6px;
+          width: 26px;
+          height: 26px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s;
+          padding: 0;
+        }
+
+        .btn-order-move:hover:not(:disabled) {
+          border-color: var(--accent-purple);
+          color: var(--accent-purple);
+          background: var(--bg-card-hover);
+        }
+
+        .btn-order-move:disabled {
+          opacity: 0.25;
+          cursor: not-allowed;
+        }
+
         .ex-card-meta {
           display: flex;
           align-items: center;
@@ -393,8 +595,8 @@ export default function ActiveWorkout({ routine, history, onSaveWorkout, onCance
 
         .sets-grid-header {
           display: grid;
-          grid-template-columns: 0.6fr 1.2fr 1.2fr 0.8fr;
-          gap: 8px;
+          grid-template-columns: 0.4fr 1.5fr 1.5fr 0.6fr;
+          gap: 6px;
           font-size: 0.7rem;
           color: var(--color-text-muted);
           font-weight: 700;
@@ -411,8 +613,8 @@ export default function ActiveWorkout({ routine, history, onSaveWorkout, onCance
 
         .set-row {
           display: grid;
-          grid-template-columns: 0.6fr 1.2fr 1.2fr 0.8fr;
-          gap: 8px;
+          grid-template-columns: 0.4fr 1.5fr 1.5fr 0.6fr;
+          gap: 6px;
           align-items: center;
           padding: 8px;
           border-radius: 10px;
@@ -433,10 +635,53 @@ export default function ActiveWorkout({ routine, history, onSaveWorkout, onCance
           padding-left: 4px;
         }
 
+        /* Spinner container and buttons */
+        .input-spinner-container {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          width: 100%;
+        }
+
+        .btn-spinner {
+          width: 24px;
+          height: 24px;
+          border-radius: 6px;
+          border: 1px solid var(--border-color);
+          background: var(--bg-secondary);
+          color: var(--color-text-primary);
+          font-size: 0.9rem;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          user-select: none;
+          transition: all 0.15s ease;
+          padding: 0;
+          flex-shrink: 0;
+        }
+
+        .btn-spinner:hover:not(:disabled) {
+          border-color: var(--accent-purple);
+          background: var(--bg-card-hover);
+        }
+
+        .btn-spinner:active:not(:disabled) {
+          transform: scale(0.92);
+        }
+
+        .btn-spinner:disabled {
+          opacity: 0.35;
+          cursor: not-allowed;
+        }
+
         .input-with-suffix {
           position: relative;
           display: flex;
           align-items: center;
+          flex: 1;
+          min-width: 0;
         }
 
         .set-input {
@@ -458,7 +703,7 @@ export default function ActiveWorkout({ routine, history, onSaveWorkout, onCance
         }
 
         .set-input.reps {
-          padding-right: 42px;
+          padding-right: 40px;
         }
 
         .set-input:disabled {
@@ -474,10 +719,67 @@ export default function ActiveWorkout({ routine, history, onSaveWorkout, onCance
 
         .suffix {
           position: absolute;
-          right: 8px;
-          font-size: 0.75rem;
+          right: 6px;
+          font-size: 0.72rem;
           color: var(--color-text-muted);
           pointer-events: none;
+        }
+
+        /* Cardio Select styling */
+        .cardio-type-container {
+          width: 100%;
+        }
+
+        .cardio-select {
+          text-align: center;
+          text-align-last: center;
+          padding-right: 8px !important;
+          cursor: pointer;
+        }
+
+        /* Sets action row buttons */
+        .sets-actions-row {
+          display: flex;
+          justify-content: flex-end;
+          gap: 12px;
+          margin-top: 12px;
+          padding: 0 4px;
+        }
+
+        .btn-set-action {
+          background: none;
+          border: none;
+          font-family: var(--font-body);
+          font-size: 0.8rem;
+          font-weight: 600;
+          cursor: pointer;
+          padding: 6px 10px;
+          border-radius: 8px;
+          transition: all 0.2s;
+        }
+
+        .btn-set-action.add {
+          color: var(--accent-lime);
+          background: rgba(19, 115, 51, 0.06);
+        }
+
+        .btn-set-action.add:hover {
+          background: rgba(19, 115, 51, 0.12);
+        }
+
+        .btn-set-action.remove {
+          color: var(--status-error);
+          background: rgba(197, 34, 31, 0.05);
+        }
+
+        .btn-set-action.remove:hover {
+          background: rgba(197, 34, 31, 0.1);
+        }
+
+        .btn-set-action:disabled {
+          opacity: 0.3;
+          cursor: not-allowed;
+          background: transparent;
         }
 
         .btn-check-set {
@@ -493,6 +795,7 @@ export default function ActiveWorkout({ routine, history, onSaveWorkout, onCance
           justify-content: center;
           transition: all 0.2s ease;
           justify-self: center;
+          flex-shrink: 0;
         }
 
         .btn-check-set:hover {
@@ -578,7 +881,7 @@ export default function ActiveWorkout({ routine, history, onSaveWorkout, onCance
           background: var(--accent-purple);
           border-color: var(--accent-purple);
           color: white;
-          transform: rotate(90deg); /* Rotaciona o play para indicar expansão/drawer aberto */
+          transform: rotate(90deg);
         }
 
         .exercise-gif-drawer {
@@ -608,7 +911,7 @@ export default function ActiveWorkout({ routine, history, onSaveWorkout, onCance
 
         .dark-theme .exercise-gif {
           filter: invert(0.9) hue-rotate(180deg);
-          mix-blend-mode: normal; /* mix-blend-mode multiply com invert às vezes fica cinza, normal é mais nítido em dark */
+          mix-blend-mode: normal;
         }
 
         @keyframes slideDown {
