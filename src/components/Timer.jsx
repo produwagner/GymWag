@@ -23,7 +23,7 @@ const MaximizeIcon = ({ size = 20, className = "" }) => (
 export default function Timer({ duration, onFinish, onCancel }) {
   const [timeLeft, setTimeLeft] = useState(duration);
   const [isActive, setIsActive] = useState(true);
-  const [isMinimized, setIsMinimized] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(true);
   const timerRef = useRef(null);
 
   // Play a soft beep sound using Web Audio API (no external file needed!)
@@ -166,28 +166,36 @@ export default function Timer({ duration, onFinish, onCancel }) {
           </button>
         </div>
       ) : (
-        <div className="timer-dynamic-island glass-dark animate-island-pop">
+        <div 
+          className="timer-dynamic-island glass-dark animate-island-pop"
+          onClick={() => setIsMinimized(false)}
+          title="Maximizar"
+        >
           <div className="island-content">
-            <div className="island-info" onClick={() => setIsMinimized(false)} title="Maximizar">
-              <ClockIcon size={14} className="island-clock-icon animate-pulse" />
+            <div className="island-info">
+              <ClockIcon size={18} className="island-clock-icon animate-pulse" />
               <span className="island-digits">{formatTime(timeLeft)}</span>
             </div>
 
-            <div className="island-controls">
+            <div className="island-controls" onClick={(e) => e.stopPropagation()}>
               <button className="btn-island-control" onClick={toggleTimer} title={isActive ? "Pausar" : "Iniciar"}>
-                {isActive ? <PauseIcon size={11} /> : <PlayIcon size={11} />}
+                {isActive ? <PauseIcon size={14} /> : <PlayIcon size={14} />}
               </button>
               <button className="btn-island-control btn-island-pill" onClick={add30Seconds}>
                 +30s
               </button>
               <button className="btn-island-control" onClick={skipTimer} title="Pular descanso">
-                <SkipIcon size={11} />
+                <SkipIcon size={14} />
               </button>
             </div>
 
             <div className="island-actions">
-              <button className="btn-island-action" onClick={() => setIsMinimized(false)} title="Maximizar">
-                <MaximizeIcon size={14} />
+              <button 
+                className="btn-island-action" 
+                onClick={(e) => { e.stopPropagation(); setIsMinimized(false); }} 
+                title="Maximizar"
+              >
+                <MaximizeIcon size={18} />
               </button>
             </div>
           </div>
@@ -354,17 +362,17 @@ export default function Timer({ duration, onFinish, onCancel }) {
         .timer-dynamic-island {
           pointer-events: auto;
           position: fixed;
-          top: 16px;
+          top: 20px;
           left: 50%;
           transform: translateX(-50%);
           width: auto;
-          min-width: 250px;
-          max-width: 90%;
-          height: 42px;
-          background: rgba(28, 28, 30, 0.9);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 21px;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+          min-width: 300px;
+          max-width: 95%;
+          height: 54px;
+          background: rgba(20, 20, 22, 0.95);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 27px;
+          box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
           backdrop-filter: blur(20px) saturate(190%);
           -webkit-backdrop-filter: blur(20px) saturate(190%);
           overflow: hidden;
@@ -372,12 +380,13 @@ export default function Timer({ duration, onFinish, onCancel }) {
           display: flex;
           flex-direction: column;
           justify-content: center;
+          cursor: pointer;
           transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
         .timer-dynamic-island:hover {
-          box-shadow: 0 12px 35px rgba(0, 0, 0, 0.45);
-          border-color: rgba(255, 255, 255, 0.18);
+          box-shadow: 0 14px 40px rgba(0, 0, 0, 0.5);
+          border-color: rgba(255, 255, 255, 0.2);
           transform: translateX(-50%) scale(1.02);
         }
 
@@ -385,17 +394,16 @@ export default function Timer({ duration, onFinish, onCancel }) {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 0 14px;
+          padding: 0 18px;
           height: 100%;
           width: 100%;
-          gap: 12px;
+          gap: 16px;
         }
 
         .island-info {
           display: flex;
           align-items: center;
-          gap: 6px;
-          cursor: pointer;
+          gap: 8px;
           user-select: none;
         }
 
@@ -404,7 +412,7 @@ export default function Timer({ duration, onFinish, onCancel }) {
         }
 
         .island-digits {
-          font-size: 0.92rem;
+          font-size: 1.15rem;
           font-weight: 700;
           color: #ffffff;
           font-family: var(--font-title);
@@ -414,7 +422,7 @@ export default function Timer({ duration, onFinish, onCancel }) {
         .island-controls {
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 10px;
         }
 
         .btn-island-control {
@@ -425,8 +433,8 @@ export default function Timer({ duration, onFinish, onCancel }) {
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 26px;
-          height: 26px;
+          width: 34px;
+          height: 34px;
           border-radius: 50%;
           transition: all 0.2s ease;
         }
@@ -442,10 +450,10 @@ export default function Timer({ duration, onFinish, onCancel }) {
 
         .btn-island-pill {
           width: auto;
-          height: 26px;
-          padding: 0 8px;
-          border-radius: 13px;
-          font-size: 0.72rem;
+          height: 34px;
+          padding: 0 12px;
+          border-radius: 17px;
+          font-size: 0.85rem;
           font-weight: 600;
         }
 
@@ -459,7 +467,7 @@ export default function Timer({ duration, onFinish, onCancel }) {
           border: none;
           color: rgba(255, 255, 255, 0.5);
           cursor: pointer;
-          padding: 4px;
+          padding: 6px;
           border-radius: 50%;
           display: flex;
           align-items: center;
@@ -477,7 +485,7 @@ export default function Timer({ duration, onFinish, onCancel }) {
           bottom: 0;
           left: 0;
           right: 0;
-          height: 2.5px;
+          height: 3px;
           background: rgba(255, 255, 255, 0.08);
         }
 
