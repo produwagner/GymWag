@@ -77,6 +77,10 @@ body.dark-theme {
   -webkit-tap-highlight-color: transparent;
 }
 
+html, body {
+  overscroll-behavior-y: contain;
+}
+
 body {
   background-color: var(--bg-primary);
   color: var(--color-text-primary);

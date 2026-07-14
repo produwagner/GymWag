@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { defaultWorkout } from "./data/defaultWorkout";
 import LandingPage from "./components/LandingPage";
 import Dashboard from "./components/Dashboard";
@@ -133,6 +133,10 @@ export default function App() {
     }
   });
 
+  // Ref to hold latest state for sync events
+  const latestDataRef = useRef({ profileHistory, profile, workoutData, history, googleSyncSettings });
+  latestDataRef.current = { profileHistory, profile, workoutData, history, googleSyncSettings };
+
   // Apply theme class to body
   useEffect(() => {
     if (theme === "dark") {
@@ -244,18 +248,19 @@ export default function App() {
 
   // Get valid token (renewing silently if expired)
   const getValidToken = async () => {
-    const clientId = GOOGLE_CLIENT_ID || import.meta.env.VITE_GOOGLE_CLIENT_ID || googleSyncSettings.clientId;
-    if (!googleSyncSettings.connected || !clientId) {
+    const currentSettings = latestDataRef.current.googleSyncSettings;
+    const clientId = GOOGLE_CLIENT_ID || import.meta.env.VITE_GOOGLE_CLIENT_ID || currentSettings.clientId;
+    if (!currentSettings.connected || !clientId) {
       throw new Error("Google Drive não está conectado.");
     }
 
-    if (googleSyncSettings.token && Date.now() < googleSyncSettings.tokenExpiry - 120000) {
-      return googleSyncSettings.token;
+    if (currentSettings.token && Date.now() < currentSettings.tokenExpiry - 120000) {
+      return currentSettings.token;
     }
 
     console.log("Token expired or close to expiry. Attempting silent renewal...");
     try {
-      const tokenResponse = await renewTokenSilently(googleSyncSettings.email);
+      const tokenResponse = await renewTokenSilently(currentSettings.email);
       const newToken = tokenResponse.access_token;
       const newExpiry = Date.now() + tokenResponse.expires_in * 1000;
 
@@ -280,6 +285,79 @@ export default function App() {
       tokenExpiry: 0
     }));
   };
+
+  // Auto-sincronização bidirecional na abertura do app (montagem) ou ao retornar para o primeiro plano (foreground)
+  useEffect(() => {
+    let active = true;
+
+    const performAutoSyncOnOpen = async () => {
+      const currentSettings = latestDataRef.current.googleSyncSettings;
+      if (!currentSettings.connected || !currentSettings.spreadsheetId) return;
+      if (currentSettings.autoSync === false) return;
+
+      console.log("Iniciando auto-sincronização de abertura do app...");
+      try {
+        const token = await getValidToken();
+        if (!active) return;
+
+        const { 
+          profileHistory: currentProfileHistory, 
+          profile: currentProfile, 
+          workoutData: currentWorkoutData, 
+          history: currentHistory 
+        } = latestDataRef.current;
+
+        const result = await syncBidirectional(
+          token,
+          currentSettings.spreadsheetId,
+          currentProfileHistory,
+          currentProfile,
+          currentWorkoutData,
+          currentHistory,
+          handleTokenExpired
+        );
+
+        if (result && active) {
+          setHistory(result.history);
+          setProfileHistory(result.profileHistory);
+          setProfile(result.profile);
+          setWorkoutData(result.workoutData);
+
+          localStorage.setItem("gymwag_history", JSON.stringify(result.history));
+          localStorage.setItem("gymwag_profile_history", JSON.stringify(result.profileHistory));
+          localStorage.setItem("gymwag_profile", JSON.stringify(result.profile));
+          localStorage.setItem("gymwag_workout_data", JSON.stringify(result.workoutData));
+          console.log("Auto-sincronização de abertura concluída com sucesso!");
+        }
+      } catch (err) {
+        console.error("Erro na auto-sincronização de abertura:", err);
+      }
+    };
+
+    // Executa 1.5s após abrir para dar tempo da biblioteca GIS carregar
+    const initialSyncTimeout = setTimeout(() => {
+      performAutoSyncOnOpen();
+    }, 1500);
+
+    // Também executa ao voltar para o app (ex: desbloquear celular ou reabrir aba)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        performAutoSyncOnOpen();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      active = false;
+      clearTimeout(initialSyncTimeout);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [
+    googleSyncSettings.connected,
+    googleSyncSettings.spreadsheetId,
+    googleSyncSettings.autoSync
+  ]);
 
   // Save state changes to localStorage
   useEffect(() => {
