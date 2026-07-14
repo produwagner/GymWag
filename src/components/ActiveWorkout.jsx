@@ -312,38 +312,20 @@ export default function ActiveWorkout({ routine, history, onSaveWorkout, onCance
                       <div key={setIdx} className={`set-row ${set.completed ? "completed" : ""}`}>
                         <span className="set-number-label">{set.setNum}ª</span>
                         
-                        {/* Weight or Distance Spinner Input */}
-                        <div className="input-spinner-container">
-                          <button 
-                            type="button" 
-                            className="btn-spinner dec" 
+                        {/* Weight or Distance Input (No Spinners) */}
+                        <div className="input-with-suffix">
+                          <input
+                            type="number"
+                            step={isCardio ? "0.1" : "1"}
+                            pattern="[0-9]*"
+                            inputMode="decimal"
+                            className="set-input load"
+                            value={set.load}
                             disabled={set.completed}
-                            onClick={() => adjustSetValue(exIdx, setIdx, "load", isCardio ? -0.1 : -1)}
-                          >
-                            -
-                          </button>
-                          <div className="input-with-suffix">
-                            <input
-                              type="number"
-                              step={isCardio ? "0.1" : "1"}
-                              pattern="[0-9]*"
-                              inputMode="decimal"
-                              className="set-input load"
-                              value={set.load}
-                              disabled={set.completed}
-                              onChange={(e) => handleSetDataChange(exIdx, setIdx, "load", e.target.value)}
-                              placeholder="0"
-                            />
-                            <span className="suffix">{isCardio ? "km" : "kg"}</span>
-                          </div>
-                          <button 
-                            type="button" 
-                            className="btn-spinner inc" 
-                            disabled={set.completed}
-                            onClick={() => adjustSetValue(exIdx, setIdx, "load", isCardio ? 0.1 : 1)}
-                          >
-                            +
-                          </button>
+                            onChange={(e) => handleSetDataChange(exIdx, setIdx, "load", e.target.value)}
+                            placeholder="0"
+                          />
+                          <span className="suffix">{isCardio ? "km" : "kg"}</span>
                         </div>
 
                         {/* Reps Spinner or Cardio Type Select */}
@@ -371,19 +353,16 @@ export default function ActiveWorkout({ routine, history, onSaveWorkout, onCance
                             >
                               -
                             </button>
-                            <div className="input-with-suffix">
-                              <input
-                                type="number"
-                                pattern="[0-9]*"
-                                inputMode="numeric"
-                                className="set-input reps"
-                                value={set.reps}
-                                disabled={set.completed}
-                                onChange={(e) => handleSetDataChange(exIdx, setIdx, "reps", e.target.value)}
-                                placeholder="0"
-                              />
-                              <span className="suffix">reps</span>
-                            </div>
+                            <input
+                              type="number"
+                              pattern="[0-9]*"
+                              inputMode="numeric"
+                              className="set-input reps reps-no-suffix"
+                              value={set.reps}
+                              disabled={set.completed}
+                              onChange={(e) => handleSetDataChange(exIdx, setIdx, "reps", e.target.value)}
+                              placeholder="0"
+                            />
                             <button 
                               type="button" 
                               className="btn-spinner inc" 
@@ -595,7 +574,7 @@ export default function ActiveWorkout({ routine, history, onSaveWorkout, onCance
 
         .sets-grid-header {
           display: grid;
-          grid-template-columns: 0.4fr 1.5fr 1.5fr 0.6fr;
+          grid-template-columns: 0.4fr 1.0fr 1.6fr 0.6fr;
           gap: 6px;
           font-size: 0.7rem;
           color: var(--color-text-muted);
@@ -613,7 +592,7 @@ export default function ActiveWorkout({ routine, history, onSaveWorkout, onCance
 
         .set-row {
           display: grid;
-          grid-template-columns: 0.4fr 1.5fr 1.5fr 0.6fr;
+          grid-template-columns: 0.4fr 1.0fr 1.6fr 0.6fr;
           gap: 6px;
           align-items: center;
           padding: 8px;
@@ -704,6 +683,13 @@ export default function ActiveWorkout({ routine, history, onSaveWorkout, onCance
 
         .set-input.reps {
           padding-right: 40px;
+        }
+
+        .set-input.reps-no-suffix {
+          padding-right: 8px !important;
+          text-align: center !important;
+          flex: 1;
+          min-width: 0;
         }
 
         .set-input:disabled {
