@@ -38,34 +38,38 @@ export default function ActiveWorkout({ routine, history, onSaveWorkout, onCance
       console.error("Erro ao carregar active workout state do localStorage:", e);
     }
 
-    // Default initialization: look up previous loads from history for each exercise in this routine
-    const getPreviousLoad = (exerciseName) => {
+    // Default initialization: look up previous sets data from history for each exercise in this routine
+    const getPreviousExerciseData = (exerciseName) => {
       for (const session of history) {
         const found = session.exercises?.find(
           (ex) => ex.name.toLowerCase() === exerciseName.toLowerCase()
         );
-        if (found && found.setsData) {
-          const loads = found.setsData.map(s => s.load).filter(Boolean);
-          if (loads.length > 0) return loads[0];
+        if (found && found.setsData && found.setsData.length > 0) {
+          return found.setsData;
         }
       }
-      return "";
+      return null;
     };
 
     // Initialize state for each exercise and its sets
     const initialExercises = routine.exercises.map((ex) => {
-      const prevLoad = getPreviousLoad(ex.name);
+      const prevSets = getPreviousExerciseData(ex.name);
       const isCardio = isCardioEx(ex.name);
       
       return {
         ...ex,
-        setsData: Array.from({ length: ex.sets }).map((_, idx) => ({
-          setNum: idx + 1,
-          load: prevLoad || ex.load || "",
-          // If cardio, default to "Corrida" instead of reps number, otherwise parse reps
-          reps: isCardio ? "Corrida" : (ex.reps.includes("-") ? ex.reps.split("-")[1] : ex.reps),
-          completed: false
-        }))
+        setsData: Array.from({ length: ex.sets }).map((_, idx) => {
+          // Find matching set in previous workout, fallback to last available set if this is an extra set
+          const prevSet = prevSets && prevSets[idx] ? prevSets[idx] : (prevSets && prevSets.length > 0 ? prevSets[prevSets.length - 1] : null);
+          
+          return {
+            setNum: idx + 1,
+            load: prevSet ? prevSet.load : (ex.load || ""),
+            // If cardio, default to "Corrida", otherwise try to load last reps or parsed defaults
+            reps: prevSet && prevSet.reps ? prevSet.reps : (isCardio ? "Corrida" : (ex.reps.includes("-") ? ex.reps.split("-")[1] : ex.reps)),
+            completed: false
+          };
+        })
       };
     });
 
