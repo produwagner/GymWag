@@ -16,7 +16,8 @@ import {
   performFullSync, 
   appendProfile, 
   appendWorkoutSession, 
-  syncRoutines 
+  syncRoutines,
+  importFromGoogleSheets
 } from "./services/googleDriveService";
 
 export default function App() {
@@ -370,6 +371,24 @@ export default function App() {
     );
   };
 
+  const handlePullSync = async () => {
+    const token = await getValidToken();
+    const data = await importFromGoogleSheets(
+      token,
+      googleSyncSettings.spreadsheetId,
+      handleTokenExpired
+    );
+    if (data) {
+      setHistory(data.history);
+      setProfileHistory(data.profileHistory);
+      setProfile(data.profile);
+      
+      localStorage.setItem("gymwag_history", JSON.stringify(data.history));
+      localStorage.setItem("gymwag_profile_history", JSON.stringify(data.profileHistory));
+      localStorage.setItem("gymwag_profile", JSON.stringify(data.profile));
+    }
+  };
+
   const handleEnterApp = () => {
     setHasEnteredApp(true);
     sessionStorage.setItem("gymwag_session_entered", "true");
@@ -479,6 +498,7 @@ export default function App() {
             googleSyncSettings={googleSyncSettings}
             onUpdateGoogleSyncSettings={setGoogleSyncSettings}
             onSyncAll={handleFullSync}
+            onPullSync={handlePullSync}
             workoutData={workoutData}
             history={history}
             onTriggerExpiredSession={handleTokenExpired}

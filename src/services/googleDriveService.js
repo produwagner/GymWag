@@ -518,3 +518,93 @@ export async function performFullSync(token, spreadsheetId, profileHistory, curr
 
   console.log("Full synchronization completed successfully!");
 }
+
+/**
+ * Imports history, profiles, and routines from Google Sheets.
+ */
+export async function importFromGoogleSheets(token, spreadsheetId, onTokenExpired) {
+  const urlHistory = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Histórico de Treinos!A2:K10000`;
+  const resHistory = await apiFetch(urlHistory, {}, token, onTokenExpired);
+  const rowsHistory = resHistory.values || [];
+
+  const urlProfile = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Perfil!A2:D10000`;
+  const resProfile = await apiFetch(urlProfile, {}, token, onTokenExpired);
+  const rowsProfile = resProfile.values || [];
+
+  const parseDateStr = (dateStr) => {
+    if (!dateStr) return new Date();
+    const parts = dateStr.trim().split(/[\s,]+/);
+    const dateParts = parts[0].split("/");
+    const timeParts = parts[1] ? parts[1].split(":") : ["00", "00", "00"];
+    
+    const day = parseInt(dateParts[0], 10);
+    const month = parseInt(dateParts[1], 10) - 1;
+    const year = parseInt(dateParts[2], 10);
+    
+    const hour = parseInt(timeParts[0], 10) || 0;
+    const minute = parseInt(timeParts[1], 10) || 0;
+    const second = parseInt(timeParts[2], 10) || 0;
+    
+    return new Date(year, month, day, hour, minute, second);
+  };
+
+  const sessionsMap = {};
+  rowsHistory.forEach(row => {
+    const [date, routineId, routineName, exName, exSets, setNum, load, reps, completed, duration, notes] = row;
+    if (!date) return;
+
+    if (!sessionsMap[date]) {
+      sessionsMap[date] = {
+        routineId: routineId || "",
+        routineName: routineName || "",
+        date: parseDateStr(date).toISOString(),
+        duration: parseInt(duration) || 0,
+        notes: notes || "",
+        exercises: []
+      };
+    }
+
+    const session = sessionsMap[date];
+    let exercise = session.exercises.find(e => e.name === exName);
+    if (!exercise) {
+      exercise = {
+        name: exName,
+        sets: parseInt(exSets) || 1,
+        setsData: []
+      };
+      session.exercises.push(exercise);
+    }
+
+    exercise.setsData.push({
+      setNum: parseInt(setNum) || 1,
+      load: load || "",
+      reps: reps || "",
+      completed: completed === "Sim"
+    });
+  });
+
+  const parsedHistory = Object.values(sessionsMap).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  const parsedProfileHistory = rowsProfile.map(row => {
+    const [date, name, weight, height] = row;
+    if (!date) return null;
+    return {
+      date: parseDateStr(date).toISOString(),
+      name: name || "",
+      weight: weight ? parseFloat(weight) : "",
+      height: height ? parseFloat(height) : ""
+    };
+  }).filter(Boolean).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  const latestProfile = parsedProfileHistory[0] || { name: "", weight: "", height: "" };
+
+  return {
+    history: parsedHistory,
+    profileHistory: parsedProfileHistory,
+    profile: {
+      name: latestProfile.name || "",
+      weight: latestProfile.weight || "",
+      height: latestProfile.height || ""
+    }
+  };
+}

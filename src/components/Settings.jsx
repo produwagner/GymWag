@@ -28,6 +28,7 @@ export default function Settings({
   googleSyncSettings,
   onUpdateGoogleSyncSettings,
   onSyncAll,
+  onPullSync,
   workoutData,
   history,
   onTriggerExpiredSession
@@ -150,6 +151,8 @@ export default function Settings({
     }
   };
 
+  const [isPulling, setIsPulling] = useState(false);
+
   const handleFullSyncClick = async () => {
     if (!googleSyncSettings.connected || !googleSyncSettings.token) return;
     
@@ -165,6 +168,24 @@ export default function Settings({
       setSyncError("Erro na sincronização completa: " + err.message);
     } finally {
       setIsSyncingAll(false);
+    }
+  };
+
+  const handlePullSyncClick = async () => {
+    if (!googleSyncSettings.connected || !googleSyncSettings.token) return;
+    
+    setIsPulling(true);
+    setSyncError("");
+    setSyncSuccess(false);
+
+    try {
+      await onPullSync();
+      setSyncSuccess(true);
+      setTimeout(() => setSyncSuccess(false), 4000);
+    } catch (err) {
+      setSyncError("Erro ao baixar dados do Drive: " + err.message);
+    } finally {
+      setIsPulling(false);
     }
   };
 
@@ -469,15 +490,27 @@ export default function Settings({
                 </label>
               </div>
 
-              {/* Force Full Sync */}
+              {/* Force Full Sync (Push) */}
               <button 
                 type="button" 
                 className="btn btn-lime full-sync-btn"
                 onClick={handleFullSyncClick}
-                disabled={isSyncingAll}
+                disabled={isSyncingAll || isPulling}
               >
                 <SyncIcon size={18} className={isSyncingAll ? "spinner-animation" : ""} />
-                {isSyncingAll ? "Sincronizando Tudo..." : "Forçar Sincronização Completa"}
+                {isSyncingAll ? "Enviando dados..." : "Enviar dados locais para o Drive"}
+              </button>
+
+              {/* Import Sync (Pull) */}
+              <button 
+                type="button" 
+                className="btn btn-primary full-sync-btn"
+                style={{ backgroundColor: "var(--accent-purple)", borderColor: "var(--accent-purple)", color: "white" }}
+                onClick={handlePullSyncClick}
+                disabled={isSyncingAll || isPulling}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isPulling ? "spinner-animation" : ""}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                {isPulling ? "Baixando dados..." : "Baixar dados do Drive para este aparelho"}
               </button>
 
               <button 
