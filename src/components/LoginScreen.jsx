@@ -27,6 +27,7 @@ export default function LoginScreen({
   const [customClientId, setCustomClientId] = useState(googleSyncSettings.clientId || "");
   const [showHelp, setShowHelp] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
 
   const envClientId = GOOGLE_CLIENT_ID || import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -39,6 +40,7 @@ export default function LoginScreen({
     }
 
     setIsConnecting(true);
+    setLoadingMessage("Aguardando autorização no Google...");
     setErrorMsg("");
 
     try {
@@ -46,6 +48,7 @@ export default function LoginScreen({
         activeClientId,
         async (tokenResponse) => {
           try {
+            setLoadingMessage("Obtendo informações da sua conta...");
             const token = tokenResponse.access_token;
             const expiryTime = Date.now() + tokenResponse.expires_in * 1000;
             
@@ -53,7 +56,10 @@ export default function LoginScreen({
             const userInfo = await fetchGoogleUserInfo(token);
             
             // 2. Setup Folder and Sheets
+            setLoadingMessage("Buscando pasta do GymWag no Google Drive...");
             const folderId = await getOrCreateFolder(token);
+            
+            setLoadingMessage("Preparando planilhas de treino...");
             const spreadsheetId = await getOrCreateSpreadsheet(token, folderId);
 
             // 3. Save sync settings
@@ -80,12 +86,14 @@ export default function LoginScreen({
             console.error("Setup error during login:", err);
             setErrorMsg("Falha ao configurar planilha no Drive: " + err.message);
             setIsConnecting(false);
+            setLoadingMessage("");
           }
         },
         (error) => {
           console.error("GIS Auth Error:", error);
           setErrorMsg("Erro de autenticação com o Google: " + error.message);
           setIsConnecting(false);
+          setLoadingMessage("");
         }
       );
 
@@ -93,11 +101,25 @@ export default function LoginScreen({
     } catch (err) {
       setErrorMsg("Erro ao inicializar cliente do Google: " + err.message);
       setIsConnecting(false);
+      setLoadingMessage("");
     }
   };
 
   return (
     <div className="login-screen-container animate-fade-in">
+      {/* Dynamic step-by-step loading overlay */}
+      {isConnecting && loadingMessage && (
+        <div className="login-loading-overlay animate-fade-in">
+          <div className="login-loading-card glass animate-slide-up">
+            <div className="loader-ring">
+              <div></div><div></div><div></div><div></div>
+            </div>
+            <p className="loading-step-text">{loadingMessage}</p>
+            <span className="loading-subtext">Por favor, mantenha o app aberto e não feche esta janela.</span>
+          </div>
+        </div>
+      )}
+
       {/* Floating Theme Button */}
       <button type="button" className="theme-toggle-btn" onClick={onToggleTheme}>
         {theme === "dark" ? <SunIcon size={20} /> : <MoonIcon size={20} />}
@@ -358,6 +380,99 @@ export default function LoginScreen({
           background: white;
           border-radius: 50%;
           padding: 2px;
+        }
+
+        @keyframes spinFast {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+
+        .spinner-animation {
+          animation: spinFast 1s linear infinite;
+        }
+
+        /* Loading Overlay Styles */
+        .login-loading-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(10, 10, 10, 0.7);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+          padding: 20px;
+        }
+
+        .login-loading-card {
+          width: 100%;
+          max-width: 320px;
+          padding: 35px 25px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          background: var(--bg-secondary);
+          border: 1px solid var(--border-color);
+          border-radius: 28px;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .loader-ring {
+          display: inline-block;
+          position: relative;
+          width: 64px;
+          height: 64px;
+          margin-bottom: 20px;
+        }
+
+        .loader-ring div {
+          box-sizing: border-box;
+          display: block;
+          position: absolute;
+          width: 48px;
+          height: 48px;
+          margin: 8px;
+          border: 4px solid var(--accent-purple);
+          border-radius: 50%;
+          animation: loader-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+          border-color: var(--accent-purple) transparent transparent transparent;
+        }
+
+        .loader-ring div:nth-child(1) {
+          animation-delay: -0.45s;
+        }
+
+        .loader-ring div:nth-child(2) {
+          animation-delay: -0.3s;
+        }
+
+        .loader-ring div:nth-child(3) {
+          animation-delay: -0.15s;
+        }
+
+        @keyframes loader-ring {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+
+        .loading-step-text {
+          font-size: 0.92rem;
+          font-weight: 600;
+          color: var(--color-text-primary);
+          margin-bottom: 8px;
+          min-height: 24px;
+        }
+
+        .loading-subtext {
+          font-size: 0.72rem;
+          color: var(--color-text-secondary);
+          line-height: 1.4;
         }
       `}</style>
     </div>

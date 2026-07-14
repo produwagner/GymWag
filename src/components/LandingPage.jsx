@@ -12,9 +12,12 @@ export default function LandingPage({ deferredPrompt, onEnterApp }) {
 
   useEffect(() => {
     const handleAppInstalled = () => {
-      console.log("PWA instalado com sucesso!");
-      setIsInstallingPWA(false);
-      setIsInstalledSuccessfully(true);
+      console.log("PWA instalado com sucesso! Preparando tela de conclusão...");
+      // Delay of 3.5 seconds to align with actual OS shortcut creation
+      setTimeout(() => {
+        setIsInstallingPWA(false);
+        setIsInstalledSuccessfully(true);
+      }, 3500);
     };
 
     window.addEventListener("appinstalled", handleAppInstalled);
@@ -376,13 +379,13 @@ export default function LandingPage({ deferredPrompt, onEnterApp }) {
           color: var(--color-text-primary);
         }
 
-        @keyframes spinSlow {
+        @keyframes spinFast {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
         }
 
         .spinner-animation {
-          animation: spinSlow 3s linear infinite;
+          animation: spinFast 1s linear infinite;
         }
       `}</style>
     </div>
