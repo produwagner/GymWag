@@ -21,16 +21,10 @@ const MONTHS = [
 
 const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
-export default function History({ history, onClearHistory }) {
+export default function History({ history }) {
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [selectedDate, setSelectedDate] = useState(() => new Date());
-
-  const handleClearClick = () => {
-    if (window.confirm("Deseja realmente apagar todo o histórico de treinos? Esta ação não pode ser desfeita.")) {
-      onClearHistory();
-    }
-  };
 
   // Calendar calculations
   const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
@@ -162,11 +156,6 @@ export default function History({ history, onClearHistory }) {
     <div className="history-container animate-fade-in">
       <header className="history-header">
         <h2 className="history-title">Histórico</h2>
-        {history.length > 0 && (
-          <button className="btn-clear-history" onClick={handleClearClick}>
-            <TrashIcon size={16} /> Limpar
-          </button>
-        )}
       </header>
 
       {history.length === 0 ? (

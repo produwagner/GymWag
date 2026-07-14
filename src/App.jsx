@@ -653,6 +653,7 @@ export default function App() {
             history={history}
             onTriggerExpiredSession={handleTokenExpired}
             onImportBackup={handleImportBackup}
+            onClearHistory={handleClearHistory}
           />
         );
       default:

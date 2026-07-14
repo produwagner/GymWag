@@ -31,7 +31,8 @@ export default function Settings({
   workoutData,
   history,
   onTriggerExpiredSession,
-  onImportBackup
+  onImportBackup,
+  onClearHistory
 }) {
   // Local profile inputs
   const [name, setName] = useState(profile.name || "");
@@ -354,7 +355,7 @@ export default function Settings({
         </form>
 
         {/* Evolution Graph */}
-        {profileHistory.length > 0 && (
+        {profileHistory.filter(h => h.weight).length > 0 && (
           <div className="evolution-chart-box">
             <h4 className="sub-section-title">Evolução de Peso</h4>
             {renderWeightChart()}
@@ -366,34 +367,25 @@ export default function Settings({
                   <tr>
                     <th>Data</th>
                     <th>Peso</th>
-                    <th>Altura</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {[...profileHistory].reverse().slice(0, 5).map((item, i) => (
-                    <tr key={i}>
-                      <td>{new Date(item.date).toLocaleDateString("pt-BR")}</td>
-                      <td>{item.weight ? `${item.weight} kg` : "-"}</td>
-                      <td>{item.height ? `${item.height} cm` : "-"}</td>
-                    </tr>
-                  ))}
+                  {[...profileHistory]
+                    .filter(item => item.weight)
+                    .reverse()
+                    .slice(0, 5)
+                    .map((item, i) => (
+                      <tr key={i}>
+                        <td>{new Date(item.date).toLocaleDateString("pt-BR")}</td>
+                        <td>{item.weight} kg</td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
-              {profileHistory.length > 5 && (
+              {profileHistory.filter(item => item.weight).length > 5 && (
                 <div className="table-more-info">Exibindo as últimas 5 pesagens</div>
               )}
             </div>
-
-            <button 
-              className="btn-clear-history-text" 
-              onClick={() => {
-                if (window.confirm("Deseja apagar todo o histórico local de evolução de peso/altura?")) {
-                  onClearProfileHistory();
-                }
-              }}
-            >
-              Apagar histórico de medidas
-            </button>
           </div>
         )}
       </section>
@@ -583,6 +575,39 @@ export default function Settings({
               style={{ display: "none" }}
             />
           </label>
+        </div>
+      </section>
+
+      {/* Danger Zone Card */}
+      <section className="settings-section glass danger-zone-card">
+        <h3 className="section-title text-danger">Zona de Perigo</h3>
+        <p className="sync-info-text" style={{ marginBottom: "14px", marginTop: "6px" }}>
+          Ações irreversíveis sobre os seus dados locais salvos no aparelho.
+        </p>
+        <div className="danger-actions-row">
+          <button 
+            type="button" 
+            className="btn btn-danger-filled danger-btn" 
+            onClick={() => {
+              if (window.confirm("Deseja realmente apagar todo o histórico local de evolução de peso/altura? Esta ação não pode ser desfeita.")) {
+                onClearProfileHistory();
+              }
+            }}
+          >
+            Apagar Histórico de Medidas
+          </button>
+          
+          <button 
+            type="button" 
+            className="btn btn-danger-filled danger-btn" 
+            onClick={() => {
+              if (window.confirm("Deseja realmente apagar todo o histórico de treinos do aparelho? Esta ação é irreversível e apagará tudo localmente!")) {
+                onClearHistory();
+              }
+            }}
+          >
+            Limpar Histórico de Treinos
+          </button>
         </div>
       </section>
 
@@ -1031,6 +1056,60 @@ export default function Settings({
           align-items: center;
           justify-content: center;
           cursor: pointer;
+        }
+
+        /* Danger Zone Card Styles */
+        .text-danger {
+          color: var(--status-error) !important;
+        }
+
+        .danger-zone-card {
+          border-color: rgba(197, 34, 31, 0.25) !important;
+          background-color: rgba(197, 34, 31, 0.02) !important;
+        }
+
+        body.dark-theme .danger-zone-card {
+          background-color: rgba(242, 139, 130, 0.03) !important;
+          border-color: rgba(242, 139, 130, 0.2) !important;
+        }
+
+        .danger-actions-row {
+          display: flex;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+
+        .danger-btn {
+          flex: 1;
+          min-width: 150px;
+          font-size: 0.85rem;
+          padding: 10px 16px;
+        }
+
+        .btn-danger-filled {
+          background-color: var(--status-error);
+          color: #ffffff;
+          border: none;
+          font-weight: 500;
+          cursor: pointer;
+          border-radius: 100px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          transition: background-color 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-danger-filled:hover {
+          background-color: #a81c19;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        body.dark-theme .btn-danger-filled {
+          color: #000000;
+        }
+
+        body.dark-theme .btn-danger-filled:hover {
+          background-color: #e57373;
         }
 
         /* Version Card */
