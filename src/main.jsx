@@ -19,6 +19,18 @@ const preventCopyCut = (e) => {
 document.addEventListener('copy', preventCopyCut);
 document.addEventListener('cut', preventCopyCut);
 
+// Impedir zoom por gesto de pinça (pinch-to-zoom) no iOS/Safari
+document.addEventListener('gesturestart', (e) => {
+  e.preventDefault();
+});
+
+// Impedir zoom por gesto de pinça (pinch-to-zoom) no Android/Chrome/Firefox
+document.addEventListener('touchstart', (e) => {
+  if (e.touches.length > 1) {
+    e.preventDefault();
+  }
+}, { passive: false });
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <App />

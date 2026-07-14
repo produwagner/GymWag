@@ -608,6 +608,7 @@ export default function Settings({
         }
 
         .input-group input {
+          width: 100%;
           padding: 12px 14px;
           border-radius: 10px;
           border: 1px solid var(--border-color);
