@@ -329,6 +329,22 @@ export async function appendProfile(token, spreadsheetId, profileData, onTokenEx
 }
 
 /**
+ * Clears all rows in the "Perfil" sheet (except header).
+ */
+export async function clearProfileHistorySheet(token, spreadsheetId, onTokenExpired) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Perfil!A2:D10000:clear`;
+  await apiFetch(url, { method: "POST" }, token, onTokenExpired);
+}
+
+/**
+ * Clears all rows in the "Histórico de Treinos" sheet (except header).
+ */
+export async function clearWorkoutHistorySheet(token, spreadsheetId, onTokenExpired) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Histórico de Treinos!A2:K10000:clear`;
+  await apiFetch(url, { method: "POST" }, token, onTokenExpired);
+}
+
+/**
  * Clears and rewrites all Routines (Fichas) in the "Fichas" sheet.
  */
 export async function syncRoutines(token, spreadsheetId, workoutData, onTokenExpired) {
@@ -556,11 +572,17 @@ export async function syncBidirectional(token, spreadsheetId, profileHistory, cu
   };
 
   // 2. Profile History Smart Merge
+  const profileHistoryClearedAt = localStorage.getItem("gymwag_profile_history_cleared_at");
   const parsedProfileHistory = rowsProfile.map(row => {
     const [date, name, weight, height] = row;
     if (!date) return null;
+    const isoDate = parseDateStr(date).toISOString();
+    // Ignore sheet records deleted before the watermark
+    if (profileHistoryClearedAt && new Date(isoDate) <= new Date(profileHistoryClearedAt)) {
+      return null;
+    }
     return {
-      date: parseDateStr(date).toISOString(),
+      date: isoDate,
       name: name || "",
       weight: weight ? parseFloat(weight) : "",
       height: height ? parseFloat(height) : ""
@@ -586,16 +608,23 @@ export async function syncBidirectional(token, spreadsheetId, profileHistory, cu
   };
 
   // 3. Workout History Smart Merge
+  const workoutHistoryClearedAt = localStorage.getItem("gymwag_workout_history_cleared_at");
   const sessionsMap = {};
   rowsHistory.forEach(row => {
     const [date, routineId, routineName, exName, exSets, setNum, load, reps, completed, duration, notes] = row;
     if (!date) return;
 
+    const isoDate = parseDateStr(date).toISOString();
+    // Ignore sheet records deleted before the watermark
+    if (workoutHistoryClearedAt && new Date(isoDate) <= new Date(workoutHistoryClearedAt)) {
+      return;
+    }
+
     if (!sessionsMap[date]) {
       sessionsMap[date] = {
         routineId: routineId || "",
         routineName: routineName || "",
-        date: parseDateStr(date).toISOString(),
+        date: isoDate,
         duration: parseInt(duration) || 0,
         notes: notes || "",
         exercises: []

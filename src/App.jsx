@@ -18,7 +18,9 @@ import {
   appendProfile, 
   appendWorkoutSession, 
   syncRoutines,
-  syncBidirectional
+  syncBidirectional,
+  clearProfileHistorySheet,
+  clearWorkoutHistorySheet
 } from "./services/googleDriveService";
 
 export default function App() {
@@ -474,11 +476,34 @@ export default function App() {
     }
   };
 
+  const handleUpdateGoogleSyncSettings = (newSettings) => {
+    // If we were disconnected and are now connecting, reset deletion watermarks
+    if (newSettings.connected && !googleSyncSettings.connected) {
+      localStorage.removeItem("gymwag_profile_history_cleared_at");
+      localStorage.removeItem("gymwag_workout_history_cleared_at");
+    }
+    setGoogleSyncSettings(newSettings);
+  };
+
   const handleClearProfileHistory = () => {
     setProfileHistory([]);
+    const clearedAt = new Date().toISOString();
+    localStorage.setItem("gymwag_profile_history_cleared_at", clearedAt);
+
+    // If connected to Google Drive, clear the remote sheet immediately
+    if (googleSyncSettings.connected && googleSyncSettings.spreadsheetId) {
+      runSyncTask(async () => {
+        const token = await getValidToken();
+        await clearProfileHistorySheet(token, googleSyncSettings.spreadsheetId, handleTokenExpired);
+        console.log("Histórico de Medidas limpo no Google Drive.");
+      }, true);
+    }
   };
 
   const handleImportBackup = async (importedData) => {
+    localStorage.removeItem("gymwag_profile_history_cleared_at");
+    localStorage.removeItem("gymwag_workout_history_cleared_at");
+
     if (importedData.gymwag_workout_data) {
       setWorkoutData(importedData.gymwag_workout_data);
       localStorage.setItem("gymwag_workout_data", JSON.stringify(importedData.gymwag_workout_data));
@@ -608,6 +633,17 @@ export default function App() {
 
   const handleClearHistory = () => {
     setHistory([]);
+    const clearedAt = new Date().toISOString();
+    localStorage.setItem("gymwag_workout_history_cleared_at", clearedAt);
+
+    // If connected to Google Drive, clear the remote sheet immediately
+    if (googleSyncSettings.connected && googleSyncSettings.spreadsheetId) {
+      runSyncTask(async () => {
+        const token = await getValidToken();
+        await clearWorkoutHistorySheet(token, googleSyncSettings.spreadsheetId, handleTokenExpired);
+        console.log("Histórico de Treinos limpo no Google Drive.");
+      }, true);
+    }
   };
 
   // Render navigation tab contents
@@ -647,7 +683,7 @@ export default function App() {
             theme={theme}
             onToggleTheme={toggleTheme}
             googleSyncSettings={googleSyncSettings}
-            onUpdateGoogleSyncSettings={setGoogleSyncSettings}
+            onUpdateGoogleSyncSettings={handleUpdateGoogleSyncSettings}
             onSync={handleSync}
             workoutData={workoutData}
             history={history}
@@ -686,7 +722,7 @@ export default function App() {
         theme={theme}
         onToggleTheme={toggleTheme}
         googleSyncSettings={googleSyncSettings}
-        onUpdateGoogleSyncSettings={setGoogleSyncSettings}
+        onUpdateGoogleSyncSettings={handleUpdateGoogleSyncSettings}
         onUpdateProfile={handleUpdateProfile}
         profile={profile}
       />
