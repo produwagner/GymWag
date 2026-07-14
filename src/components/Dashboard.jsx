@@ -1,7 +1,7 @@
 import React from "react";
 import { BarbellIcon, TrophyIcon, HistoryIcon, EditIcon } from "./Icons";
 
-export default function Dashboard({ workoutData, history, onStartWorkout, onSetActiveTab }) {
+export default function Dashboard({ workoutData, history, onStartWorkout, onSetActiveTab, profile }) {
   // Simple weekly tracker (last 7 days)
   const getWeeklyProgress = () => {
     const days = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
@@ -44,7 +44,7 @@ export default function Dashboard({ workoutData, history, onStartWorkout, onSetA
       <header className="dash-header">
         <div>
           <span className="welcome-text">Bora treinar,</span>
-          <h2 className="user-name">Wagner!</h2>
+          <h2 className="user-name">{profile?.name || "Wagner"}!</h2>
         </div>
         <div className="streak-badge glass">
           <TrophyIcon size={20} className="badge-icon" />

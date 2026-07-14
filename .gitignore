@@ -29,3 +29,9 @@ dist-ssr/
 
 # Personal photos
 Fotos Wagner/
+
+# Local env files
+.env
+.env.local
+.env.*.local
+

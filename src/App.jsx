@@ -5,12 +5,21 @@ import Dashboard from "./components/Dashboard";
 import ActiveWorkout from "./components/ActiveWorkout";
 import RoutineManager from "./components/RoutineManager";
 import History from "./components/History";
-import { BarbellIcon, CalendarIcon, HistoryIcon, SettingsIcon } from "./components/Icons";
+import Settings from "./components/Settings";
+import LoginScreen from "./components/LoginScreen";
+import { BarbellIcon, CalendarIcon, HistoryIcon, UserIcon, ClipboardIcon } from "./components/Icons";
+import { 
+  loadGoogleGIS, 
+  renewTokenSilently, 
+  performFullSync, 
+  appendProfile, 
+  appendWorkoutSession, 
+  syncRoutines 
+} from "./services/googleDriveService";
 
 export default function App() {
   // Navigation State
   const [activeTab, setActiveTab] = useState("dashboard"); // dashboard, routines, history
-  const [activeWorkoutRoutine, setActiveWorkoutRoutine] = useState(null); // active training routine
   const [hasEnteredApp, setHasEnteredApp] = useState(() => {
     if (window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone) {
       return true;
@@ -54,6 +63,70 @@ export default function App() {
     } catch (e) {
       console.error("Erro ao carregar history:", e);
       return [];
+    }
+  });
+
+  // Profile State
+  const [profile, setProfile] = useState(() => {
+    try {
+      const saved = localStorage.getItem("gymwag_profile");
+      return saved ? JSON.parse(saved) : { name: "Wagner", weight: "", height: "" };
+    } catch (e) {
+      console.error("Erro ao carregar profile:", e);
+      return { name: "Wagner", weight: "", height: "" };
+    }
+  });
+
+  const [profileHistory, setProfileHistory] = useState(() => {
+    try {
+      const saved = localStorage.getItem("gymwag_profile_history");
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error("Erro ao carregar profileHistory:", e);
+      return [];
+    }
+  });
+
+  // Google Sync Settings State
+  const [googleSyncSettings, setGoogleSyncSettings] = useState(() => {
+    try {
+      const saved = localStorage.getItem("gymwag_google_sync");
+      return saved ? JSON.parse(saved) : {
+        connected: false,
+        token: "",
+        tokenExpiry: 0,
+        email: "",
+        userName: "",
+        picture: "",
+        folderId: "",
+        spreadsheetId: "",
+        clientId: "",
+        autoSync: true
+      };
+    } catch (e) {
+      console.error("Erro ao carregar googleSyncSettings:", e);
+      return {
+        connected: false,
+        token: "",
+        tokenExpiry: 0,
+        email: "",
+        userName: "",
+        picture: "",
+        folderId: "",
+        spreadsheetId: "",
+        clientId: "",
+        autoSync: true
+      };
+    }
+  });
+
+  // Active workout state (persisted to localStorage)
+  const [activeWorkoutRoutine, setActiveWorkoutRoutine] = useState(() => {
+    try {
+      const saved = localStorage.getItem("gymwag_active_routine");
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      return null;
     }
   });
 
@@ -106,14 +179,194 @@ export default function App() {
     };
   }, []);
 
+  // Load Google GIS & handle silent token renewal
+  useEffect(() => {
+    loadGoogleGIS()
+      .then(() => {
+        const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || googleSyncSettings.clientId;
+        if (googleSyncSettings.connected && clientId) {
+          const windowGoogleInterval = setInterval(() => {
+            if (window.google && window.google.accounts) {
+              clearInterval(windowGoogleInterval);
+              
+              initTokenClient(
+                clientId,
+                (tokenResponse) => {
+                  const token = tokenResponse.access_token;
+                  const expiry = Date.now() + tokenResponse.expires_in * 1000;
+                  setGoogleSyncSettings(prev => ({
+                    ...prev,
+                    token,
+                    tokenExpiry: expiry
+                  }));
+                },
+                (err) => console.error("Silent client init error:", err)
+              );
+
+              // Always verify the session on mount by doing a silent renewal.
+              // If it fails because the user logged out of their Google Account, we log out here to show login.
+              if (googleSyncSettings.email) {
+                renewTokenSilently(googleSyncSettings.email)
+                  .then((tokenResponse) => {
+                    console.log("Google token renewed and verified silently on mount.");
+                    setGoogleSyncSettings(prev => ({
+                      ...prev,
+                      token: tokenResponse.access_token,
+                      tokenExpiry: Date.now() + tokenResponse.expires_in * 1000
+                    }));
+                  })
+                  .catch((err) => {
+                    console.warn("Silent token renewal failed on mount:", err);
+                    if (err && (err.error === "interaction_required" || err.error === "login_required" || err.error === "consent_required")) {
+                      console.log("Google Account session closed. Disconnecting from app to prompt re-login.");
+                      setGoogleSyncSettings(prev => ({
+                        ...prev,
+                        connected: false,
+                        token: "",
+                        tokenExpiry: 0
+                      }));
+                    } else {
+                      // Offline/network error, clear current token so it retries, but don't disconnect
+                      handleTokenExpired();
+                    }
+                  });
+              }
+            }
+          }, 200);
+          return () => clearInterval(windowGoogleInterval);
+        }
+      })
+      .catch((err) => console.error("Error loading Google GIS library:", err));
+  }, []);
+
+  // Get valid token (renewing silently if expired)
+  const getValidToken = async () => {
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || googleSyncSettings.clientId;
+    if (!googleSyncSettings.connected || !clientId) {
+      throw new Error("Google Drive não está conectado.");
+    }
+
+    if (googleSyncSettings.token && Date.now() < googleSyncSettings.tokenExpiry - 120000) {
+      return googleSyncSettings.token;
+    }
+
+    console.log("Token expired or close to expiry. Attempting silent renewal...");
+    try {
+      const tokenResponse = await renewTokenSilently(googleSyncSettings.email);
+      const newToken = tokenResponse.access_token;
+      const newExpiry = Date.now() + tokenResponse.expires_in * 1000;
+
+      setGoogleSyncSettings(prev => ({
+        ...prev,
+        token: newToken,
+        tokenExpiry: newExpiry
+      }));
+
+      return newToken;
+    } catch (err) {
+      console.error("Silent token renewal failed:", err);
+      handleTokenExpired();
+      throw new Error("Sessão do Google Drive expirou. Por favor, acesse a aba Perfil e clique em Conectar novamente.");
+    }
+  };
+
+  const handleTokenExpired = () => {
+    setGoogleSyncSettings(prev => ({
+      ...prev,
+      token: "",
+      tokenExpiry: 0
+    }));
+  };
+
   // Save state changes to localStorage
   useEffect(() => {
     localStorage.setItem("gymwag_workout_data", JSON.stringify(workoutData));
-  }, [workoutData]);
+
+    // Debounced routines auto-sync to Sheets if connected
+    if (googleSyncSettings.connected && googleSyncSettings.spreadsheetId) {
+      const syncDebounce = setTimeout(async () => {
+        try {
+          const token = await getValidToken();
+          await syncRoutines(token, googleSyncSettings.spreadsheetId, workoutData, handleTokenExpired);
+          console.log("Rotinas sincronizadas com Google Sheets.");
+        } catch (err) {
+          console.error("Erro ao sincronizar rotinas de treino:", err);
+        }
+      }, 2000);
+      return () => clearTimeout(syncDebounce);
+    }
+  }, [workoutData, googleSyncSettings.connected, googleSyncSettings.spreadsheetId]);
 
   useEffect(() => {
     localStorage.setItem("gymwag_history", JSON.stringify(history));
   }, [history]);
+
+  useEffect(() => {
+    localStorage.setItem("gymwag_profile", JSON.stringify(profile));
+  }, [profile]);
+
+  useEffect(() => {
+    localStorage.setItem("gymwag_profile_history", JSON.stringify(profileHistory));
+  }, [profileHistory]);
+
+  useEffect(() => {
+    localStorage.setItem("gymwag_google_sync", JSON.stringify(googleSyncSettings));
+  }, [googleSyncSettings]);
+
+  useEffect(() => {
+    if (activeWorkoutRoutine) {
+      localStorage.setItem("gymwag_active_routine", JSON.stringify(activeWorkoutRoutine));
+    } else {
+      localStorage.removeItem("gymwag_active_routine");
+    }
+  }, [activeWorkoutRoutine]);
+
+  const handleUpdateProfile = async (newProfile) => {
+    // Check if weight or height changed to add to history log
+    const weightChanged = newProfile.weight !== profile.weight && newProfile.weight !== "";
+    const heightChanged = newProfile.height !== profile.height && newProfile.height !== "";
+
+    let updatedHistory = [...profileHistory];
+    if (weightChanged || heightChanged || updatedHistory.length === 0) {
+      updatedHistory.push({
+        date: new Date().toISOString(),
+        name: newProfile.name,
+        weight: newProfile.weight,
+        height: newProfile.height
+      });
+      setProfileHistory(updatedHistory);
+    }
+
+    setProfile(newProfile);
+
+    // Sync profile to Google Sheets if connected
+    if (googleSyncSettings.connected && googleSyncSettings.spreadsheetId) {
+      try {
+        const token = await getValidToken();
+        await appendProfile(token, googleSyncSettings.spreadsheetId, newProfile, handleTokenExpired);
+        console.log("Medidas de perfil enviadas para o Google Sheets.");
+      } catch (err) {
+        console.error("Erro ao sincronizar perfil com o Google Sheets:", err);
+      }
+    }
+  };
+
+  const handleClearProfileHistory = () => {
+    setProfileHistory([]);
+  };
+
+  const handleFullSync = async () => {
+    const token = await getValidToken();
+    await performFullSync(
+      token,
+      googleSyncSettings.spreadsheetId,
+      profileHistory,
+      profile,
+      workoutData,
+      history,
+      handleTokenExpired
+    );
+  };
 
   const handleEnterApp = () => {
     setHasEnteredApp(true);
@@ -124,7 +377,7 @@ export default function App() {
     setActiveWorkoutRoutine(routine);
   };
 
-  const handleSaveWorkout = (sessionData) => {
+  const handleSaveWorkout = async (sessionData) => {
     // Add new session to history
     setHistory((prev) => [sessionData, ...prev]);
 
@@ -159,11 +412,25 @@ export default function App() {
 
     setActiveWorkoutRoutine(null);
     setActiveTab("dashboard");
+
+    // Sync finished session to Google Drive if connected and autoSync is enabled
+    if (googleSyncSettings.connected && googleSyncSettings.autoSync !== false) {
+      try {
+        console.log("Iniciando auto-sincronização do treino finalizado...");
+        const token = await getValidToken();
+        await appendWorkoutSession(token, googleSyncSettings.spreadsheetId, sessionData, handleTokenExpired);
+        console.log("Treino sincronizado com o Google Sheets!");
+      } catch (err) {
+        console.error("Erro na auto-sincronização do treino:", err);
+        alert("Treino tempo salvo localmente no aparelho, mas ocorreu um erro ao sincronizar com a planilha do Google: " + err.message);
+      }
+    }
   };
 
   const handleCancelWorkout = () => {
     if (window.confirm("Deseja realmente cancelar este treino? Os dados digitados serão perdidos.")) {
       setActiveWorkoutRoutine(null);
+      localStorage.removeItem("gymwag_active_workout_state");
     }
   };
 
@@ -181,6 +448,7 @@ export default function App() {
             history={history}
             onStartWorkout={handleStartWorkout}
             onSetActiveTab={setActiveTab}
+            profile={profile}
           />
         );
       case "routines":
@@ -197,6 +465,23 @@ export default function App() {
             onClearHistory={handleClearHistory}
           />
         );
+      case "settings":
+        return (
+          <Settings
+            profile={profile}
+            onUpdateProfile={handleUpdateProfile}
+            profileHistory={profileHistory}
+            onClearProfileHistory={handleClearProfileHistory}
+            theme={theme}
+            onToggleTheme={toggleTheme}
+            googleSyncSettings={googleSyncSettings}
+            onUpdateGoogleSyncSettings={setGoogleSyncSettings}
+            onSyncAll={handleFullSync}
+            workoutData={workoutData}
+            history={history}
+            onTriggerExpiredSession={handleTokenExpired}
+          />
+        );
       default:
         return (
           <Dashboard
@@ -204,6 +489,7 @@ export default function App() {
             history={history}
             onStartWorkout={handleStartWorkout}
             onSetActiveTab={setActiveTab}
+            profile={profile}
           />
         );
     }
@@ -215,6 +501,20 @@ export default function App() {
       <LandingPage
         deferredPrompt={deferredPrompt}
         onEnterApp={handleEnterApp}
+      />
+    );
+  }
+
+  // If they entered the app but are not logged into Google Drive, show the Login Screen
+  if (hasEnteredApp && !googleSyncSettings.connected) {
+    return (
+      <LoginScreen
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        googleSyncSettings={googleSyncSettings}
+        onUpdateGoogleSyncSettings={setGoogleSyncSettings}
+        onUpdateProfile={handleUpdateProfile}
+        profile={profile}
       />
     );
   }
@@ -254,7 +554,7 @@ export default function App() {
           className={`nav-item ${activeTab === "routines" ? "active" : ""}`}
           onClick={() => setActiveTab("routines")}
         >
-          <SettingsIcon size={20} />
+          <ClipboardIcon size={20} />
           <span>Fichas</span>
         </button>
 
@@ -264,6 +564,14 @@ export default function App() {
         >
           <CalendarIcon size={20} />
           <span>Histórico</span>
+        </button>
+
+        <button
+          className={`nav-item ${activeTab === "settings" ? "active" : ""}`}
+          onClick={() => setActiveTab("settings")}
+        >
+          <UserIcon size={20} />
+          <span>Perfil</span>
         </button>
       </nav>
 
@@ -312,7 +620,7 @@ export default function App() {
           font-size: 0.7rem;
           font-weight: 600;
           transition: all 0.2s;
-          padding: 8px 16px;
+          padding: 8px 10px;
           border-radius: 12px;
         }
 

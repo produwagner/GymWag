@@ -6,7 +6,7 @@ import { exerciseGifs } from "../data/exerciseGifs";
 export default function ActiveWorkout({ routine, history, onSaveWorkout, onCancelWorkout }) {
   const [exercisesState, setExercisesState] = useState([]);
   const [activeTimer, setActiveTimer] = useState(null);
-  const [startTime] = useState(new Date());
+  const [startTime, setStartTime] = useState(() => new Date());
   const [notes, setNotes] = useState("");
   const [isFinishing, setIsFinishing] = useState(false);
   const [expandedGifExId, setExpandedGifExId] = useState(null);
@@ -16,7 +16,24 @@ export default function ActiveWorkout({ routine, history, onSaveWorkout, onCance
   };
 
   useEffect(() => {
-    // Look up previous loads from history for each exercise in this routine
+    // Check if there is a saved active workout state for this routine
+    try {
+      const saved = localStorage.getItem("gymwag_active_workout_state");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.routineId === routine.id) {
+          setExercisesState(parsed.exercisesState);
+          setStartTime(new Date(parsed.startTime));
+          setNotes(parsed.notes || "");
+          console.log("Restaurou treino ativo salvo para ficha:", routine.id);
+          return; // Skip normal initialization
+        }
+      }
+    } catch (e) {
+      console.error("Erro ao carregar active workout state do localStorage:", e);
+    }
+
+    // Default initialization: look up previous loads from history for each exercise in this routine
     const getPreviousLoad = (exerciseName) => {
       // Find the most recent workout in history that contains this exercise
       for (const session of history) {
@@ -50,6 +67,21 @@ export default function ActiveWorkout({ routine, history, onSaveWorkout, onCance
 
     setExercisesState(initialExercises);
   }, [routine, history]);
+
+  // Persist active workout progress in real-time
+  useEffect(() => {
+    if (exercisesState && exercisesState.length > 0) {
+      localStorage.setItem(
+        "gymwag_active_workout_state",
+        JSON.stringify({
+          routineId: routine.id,
+          exercisesState,
+          startTime: startTime.toISOString(),
+          notes
+        })
+      );
+    }
+  }, [exercisesState, startTime, notes, routine.id]);
 
   // Handle checking/unchecking a set
   const handleSetCheck = (exIdx, setIdx) => {
@@ -100,6 +132,9 @@ export default function ActiveWorkout({ routine, history, onSaveWorkout, onCance
         completed: s.completed
       }))
     }));
+
+    // Clear active workout state on finish
+    localStorage.removeItem("gymwag_active_workout_state");
 
     onSaveWorkout({
       routineId: routine.id,
