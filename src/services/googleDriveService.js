@@ -525,11 +525,13 @@ export async function performFullSync(token, spreadsheetId, profileHistory, curr
 export async function importFromGoogleSheets(token, spreadsheetId, onTokenExpired) {
   const urlHistory = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Histórico de Treinos!A2:K10000`;
   const resHistory = await apiFetch(urlHistory, {}, token, onTokenExpired);
-  const rowsHistory = resHistory.values || [];
+  const dataHistory = await resHistory.json();
+  const rowsHistory = dataHistory.values || [];
 
   const urlProfile = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Perfil!A2:D10000`;
   const resProfile = await apiFetch(urlProfile, {}, token, onTokenExpired);
-  const rowsProfile = resProfile.values || [];
+  const dataProfile = await resProfile.json();
+  const rowsProfile = dataProfile.values || [];
 
   const parseDateStr = (dateStr) => {
     if (!dateStr) return new Date();
