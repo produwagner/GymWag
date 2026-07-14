@@ -166,35 +166,36 @@ export default function Timer({ duration, onFinish, onCancel }) {
           </button>
         </div>
       ) : (
-        <div className="timer-bar-top glass animate-slide-down">
-          <div className="timer-bar-info">
-            <ClockIcon size={16} className="timer-header-icon animate-pulse" />
-            <span className="timer-bar-label">Descanso:</span>
-            <span className="timer-bar-digits">{formatTime(timeLeft)}</span>
+        <div className="timer-dynamic-island glass-dark animate-island-pop">
+          <div className="island-content">
+            <div className="island-info" onClick={() => setIsMinimized(false)} title="Maximizar">
+              <ClockIcon size={14} className="island-clock-icon animate-pulse" />
+              <span className="island-digits">{formatTime(timeLeft)}</span>
+            </div>
+
+            <div className="island-controls">
+              <button className="btn-island-control" onClick={toggleTimer} title={isActive ? "Pausar" : "Iniciar"}>
+                {isActive ? <PauseIcon size={11} /> : <PlayIcon size={11} />}
+              </button>
+              <button className="btn-island-control btn-island-pill" onClick={add30Seconds}>
+                +30s
+              </button>
+              <button className="btn-island-control" onClick={skipTimer} title="Pular descanso">
+                <SkipIcon size={11} />
+              </button>
+            </div>
+
+            <div className="island-actions">
+              <button className="btn-island-action" onClick={() => setIsMinimized(false)} title="Maximizar">
+                <MaximizeIcon size={14} />
+              </button>
+            </div>
           </div>
 
-          <div className="timer-bar-controls">
-            <button className="btn-bar-control btn-circle-sm" onClick={toggleTimer} title={isActive ? "Pausar" : "Iniciar"}>
-              {isActive ? <PauseIcon size={14} /> : <PlayIcon size={14} />}
-            </button>
-            <button className="btn-bar-control btn-pill-sm" onClick={add30Seconds}>
-              +30s
-            </button>
-            <button className="btn-bar-control btn-circle-sm" onClick={skipTimer} title="Pular descanso">
-              <SkipIcon size={14} />
-            </button>
-          </div>
-
-          <div className="timer-bar-actions">
-            <button className="btn-bar-action" onClick={() => setIsMinimized(false)} title="Maximizar">
-              <MaximizeIcon size={16} />
-            </button>
-          </div>
-
-          {/* Linear Progress Bar at the bottom of the top bar */}
-          <div className="timer-bar-progress-bg">
+          {/* Progress bar inside the Dynamic Island pill bottom */}
+          <div className="island-progress-bg">
             <div 
-              className="timer-bar-progress-fill" 
+              className="island-progress-fill" 
               style={{ width: `${(timeLeft / duration) * 100}%` }}
             />
           </div>
@@ -349,129 +350,161 @@ export default function Timer({ duration, onFinish, onCancel }) {
           color: var(--status-error);
         }
 
-        /* Estilos da Barra de Descanso (Minimizada) */
-        .timer-bar-top {
+        /* Ilha Dinâmica (Dynamic Island) no Topo-Centro */
+        .timer-dynamic-island {
           pointer-events: auto;
-          width: 100%;
-          height: 56px;
-          background: var(--bg-secondary);
-          border-bottom: 1px solid var(--border-color);
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+          position: fixed;
+          top: 16px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: auto;
+          min-width: 250px;
+          max-width: 90%;
+          height: 42px;
+          background: rgba(28, 28, 30, 0.9);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 21px;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+          backdrop-filter: blur(20px) saturate(190%);
+          -webkit-backdrop-filter: blur(20px) saturate(190%);
+          overflow: hidden;
+          z-index: 1001;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .timer-dynamic-island:hover {
+          box-shadow: 0 12px 35px rgba(0, 0, 0, 0.45);
+          border-color: rgba(255, 255, 255, 0.18);
+          transform: translateX(-50%) scale(1.02);
+        }
+
+        .island-content {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 0 16px;
-          position: relative;
-          z-index: 1001;
+          padding: 0 14px;
+          height: 100%;
+          width: 100%;
+          gap: 12px;
         }
 
-        .timer-bar-info {
+        .island-info {
           display: flex;
           align-items: center;
           gap: 6px;
+          cursor: pointer;
+          user-select: none;
         }
 
-        .timer-bar-label {
-          font-size: 0.8rem;
-          color: var(--color-text-secondary);
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
+        .island-clock-icon {
+          color: var(--accent-purple);
+        }
+
+        .island-digits {
+          font-size: 0.92rem;
+          font-weight: 700;
+          color: #ffffff;
+          font-family: var(--font-title);
+          letter-spacing: -0.01em;
+        }
+
+        .island-controls {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .btn-island-control {
+          background: rgba(255, 255, 255, 0.12);
+          border: none;
+          color: #ffffff;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 26px;
+          height: 26px;
+          border-radius: 50%;
+          transition: all 0.2s ease;
+        }
+
+        .btn-island-control:hover {
+          background: rgba(255, 255, 255, 0.24);
+          transform: scale(1.08);
+        }
+
+        .btn-island-control:active {
+          transform: scale(0.95);
+        }
+
+        .btn-island-pill {
+          width: auto;
+          height: 26px;
+          padding: 0 8px;
+          border-radius: 13px;
+          font-size: 0.72rem;
           font-weight: 600;
         }
 
-        .timer-bar-digits {
-          font-size: 1.25rem;
-          font-weight: 700;
-          color: var(--color-text-primary);
-          font-family: var(--font-title);
-        }
-
-        .timer-bar-controls {
+        .island-actions {
           display: flex;
           align-items: center;
-          gap: 10px;
         }
 
-        .btn-bar-control {
-          background: var(--bg-primary);
-          border: 1px solid var(--border-color);
-          color: var(--color-text-primary);
+        .btn-island-action {
+          background: none;
+          border: none;
+          color: rgba(255, 255, 255, 0.5);
           cursor: pointer;
+          padding: 4px;
+          border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
           transition: all 0.2s;
         }
 
-        .btn-bar-control:hover {
-          background: var(--border-color);
-          border-color: var(--color-text-secondary);
+        .btn-island-action:hover {
+          color: #ffffff;
+          background: rgba(255, 255, 255, 0.1);
         }
 
-        .btn-circle-sm {
-          width: 32px;
-          height: 32px;
-          border-radius: 50%;
-        }
-
-        .btn-pill-sm {
-          height: 32px;
-          padding: 0 12px;
-          border-radius: 16px;
-          font-size: 0.8rem;
-          font-weight: 600;
-        }
-
-        .timer-bar-actions {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .btn-bar-action {
-          background: none;
-          border: none;
-          color: var(--color-text-muted);
-          cursor: pointer;
-          padding: 6px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: background 0.2s, color 0.2s;
-        }
-
-        .btn-bar-action:hover {
-          background: var(--border-color);
-          color: var(--color-text-primary);
-        }
-
-        .timer-bar-progress-bg {
+        .island-progress-bg {
           position: absolute;
           bottom: 0;
           left: 0;
           right: 0;
-          height: 3px;
-          background: var(--border-color);
+          height: 2.5px;
+          background: rgba(255, 255, 255, 0.08);
         }
 
-        .timer-bar-progress-fill {
+        .island-progress-fill {
           height: 100%;
           background: var(--accent-purple);
+          border-radius: 0 2px 2px 0;
           transition: width 1s linear;
         }
 
-        .animate-slide-down {
-          animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        .animate-island-pop {
+          animation: islandPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
         .animate-pulse {
           animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
 
-        @keyframes slideDown {
-          from { transform: translateY(-100%); }
-          to { transform: translateY(0); }
+        @keyframes islandPop {
+          from {
+            transform: translateX(-50%) scale(0.85);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(-50%) scale(1);
+            opacity: 1;
+          }
         }
 
         @keyframes pulse {
