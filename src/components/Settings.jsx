@@ -421,7 +421,7 @@ export default function Settings({
         {!googleSyncSettings.connected ? (
           <div className="sync-connect-flow">
             <p className="sync-info-text">
-              Conecte sua conta do Google para sincronizar de forma oculta e segura seu perfil, fichas e histórico de treinos no seu Google Drive (armazenamento AppData privado).
+              Conecte sua conta do Google para sincronizar automaticamente seu perfil, fichas e histórico de treinos em uma planilha do Google Sheets criada no seu Drive.
             </p>
 
             {/* Client ID Entry */}
@@ -500,7 +500,17 @@ export default function Settings({
               </div>
             </div>
 
+            {/* Sheet Link */}
             <div className="sync-actions-grid">
+              <a 
+                href={`https://docs.google.com/spreadsheets/d/${googleSyncSettings.spreadsheetId}/edit`} 
+                target="_blank" 
+                rel="noreferrer" 
+                className="btn btn-secondary open-sheet-btn"
+              >
+                <CheckCircleIcon size={18} /> Abrir Planilha no Google Sheets
+              </a>
+
               {/* Auto Sync Toggle */}
               <div className="toggle-sync-option">
                 <label className="switch-label">
