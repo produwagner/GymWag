@@ -5,7 +5,7 @@
  */
 
 const SCOPES = [
-  "https://www.googleapis.com/auth/drive.file",
+  "https://www.googleapis.com/auth/drive.appdata",
   "openid",
   "profile",
   "email"
@@ -156,52 +156,31 @@ async function apiFetch(url, options = {}, token, onTokenExpired) {
 }
 
 /**
- * Searches for a folder named "GymWag" or creates it if not found.
+ * Mocked search/creation since we store directly in appDataFolder.
+ * Returns the special system identifier "appDataFolder".
  */
 export async function getOrCreateFolder(token, onTokenExpired) {
-  // 1. Search for existing GymWag folder
-  const query = encodeURIComponent("name='GymWag' and mimeType='application/vnd.google-apps.folder' and trashed=false");
-  const urlSearch = `https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name)`;
-  const resSearch = await apiFetch(urlSearch, { method: "GET" }, token, onTokenExpired);
-  const searchResult = await resSearch.json();
-
-  if (searchResult.files && searchResult.files.length > 0) {
-    console.log("Found existing GymWag folder ID:", searchResult.files[0].id);
-    return searchResult.files[0].id;
-  }
-
-  // 2. Create GymWag folder
-  console.log("Creating new GymWag folder...");
-  const urlCreate = "https://www.googleapis.com/drive/v3/files";
-  const resCreate = await apiFetch(urlCreate, {
-    method: "POST",
-    body: JSON.stringify({
-      name: "GymWag",
-      mimeType: "application/vnd.google-apps.folder"
-    })
-  }, token, onTokenExpired);
-  const createResult = await resCreate.json();
-  console.log("Created GymWag folder ID:", createResult.id);
-  return createResult.id;
+  console.log("Using system AppData folder...");
+  return "appDataFolder";
 }
 
 /**
- * Searches for or creates the Google Sheet inside the GymWag folder.
+ * Searches for or creates the Google Sheet inside the AppData folder.
  */
 export async function getOrCreateSpreadsheet(token, folderId, onTokenExpired) {
-  // 1. Search for GymWag spreadsheet inside folder
+  // 1. Search for GymWag spreadsheet inside AppData folder
   const query = encodeURIComponent(`name='GymWag' and mimeType='application/vnd.google-apps.spreadsheet' and '${folderId}' in parents and trashed=false`);
-  const urlSearch = `https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name)`;
+  const urlSearch = `https://www.googleapis.com/drive/v3/files?q=${query}&spaces=appDataFolder&fields=files(id,name)`;
   const resSearch = await apiFetch(urlSearch, { method: "GET" }, token, onTokenExpired);
   const searchResult = await resSearch.json();
 
   if (searchResult.files && searchResult.files.length > 0) {
-    console.log("Found existing GymWag Sheet ID:", searchResult.files[0].id);
+    console.log("Found existing GymWag Sheet ID in AppData folder:", searchResult.files[0].id);
     return searchResult.files[0].id;
   }
 
   // 2. Create Sheet
-  console.log("Creating new GymWag Google Sheet...");
+  console.log("Creating new GymWag Google Sheet in AppData folder...");
   const urlCreate = "https://www.googleapis.com/drive/v3/files";
   const resCreate = await apiFetch(urlCreate, {
     method: "POST",
@@ -213,7 +192,7 @@ export async function getOrCreateSpreadsheet(token, folderId, onTokenExpired) {
   }, token, onTokenExpired);
   const createResult = await resCreate.json();
   const spreadsheetId = createResult.id;
-  console.log("Created GymWag Sheet ID:", spreadsheetId);
+  console.log("Created GymWag Sheet ID in AppData folder:", spreadsheetId);
 
   // 3. Initialize Spreadsheet layout (rename default page, add pages, and write headers)
   await initializeSpreadsheetLayout(token, spreadsheetId, onTokenExpired);
@@ -709,7 +688,9 @@ export async function syncBidirectional(token, spreadsheetId, profileHistory, cu
         };
       }
 
+      const exIndex = routinesMap[routineId].exercises.length + 1;
       routinesMap[routineId].exercises.push({
+        id: `ex-${routineId}-${exIndex}`,
         name: exName,
         sets: parseInt(exSets) || 1,
         reps: exReps || "",

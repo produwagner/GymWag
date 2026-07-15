@@ -136,7 +136,7 @@ export default function LoginScreen({
         </div>
 
         <p className="login-description">
-          Para acessar o GymWag e salvar automaticamente suas fichas, peso, altura e histórico de treinos no seu Google Drive, conecte-se com sua conta Google.
+          Para acessar o GymWag e sincronizar de forma oculta e segura suas fichas, peso, altura e histórico de treinos no seu Google Drive (espaço privado), conecte-se com sua conta Google.
         </p>
 
         {errorMsg && <div className="login-error-banner">{errorMsg}</div>}

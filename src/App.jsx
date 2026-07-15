@@ -124,6 +124,27 @@ function deduplicateProfileHistory(profileHistoryList) {
   return Object.values(profileMap).sort((a, b) => new Date(b.date) - new Date(a.date));
 }
 
+// Helper to sanitize workoutData and ensure every exercise has a unique ID
+function sanitizeWorkoutData(data) {
+  if (!data || !Array.isArray(data.routines)) return data;
+  return {
+    ...data,
+    routines: data.routines.map(routine => {
+      if (!routine || !Array.isArray(routine.exercises)) return routine;
+      return {
+        ...routine,
+        exercises: routine.exercises.map((ex, idx) => {
+          if (!ex) return ex;
+          return {
+            ...ex,
+            id: ex.id || `ex-${routine.id}-${idx + 1}`
+          };
+        })
+      };
+    })
+  };
+}
+
 export default function App() {
   // Navigation State
   const [activeTab, setActiveTab] = useState("dashboard"); // dashboard, routines, history
@@ -154,7 +175,8 @@ export default function App() {
       const saved = localStorage.getItem("gymwag_workout_data") ||
                     localStorage.getItem("gymrot_workout_data") ||
                     localStorage.getItem("fittrack_workout_data");
-      return saved ? JSON.parse(saved) : defaultWorkout;
+      const parsed = saved ? JSON.parse(saved) : defaultWorkout;
+      return sanitizeWorkoutData(parsed);
     } catch (e) {
       console.error("Erro ao carregar workoutData:", e);
       return defaultWorkout;
@@ -726,12 +748,13 @@ export default function App() {
         setHistory(result.history);
         setProfileHistory(result.profileHistory);
         setProfile(result.profile);
-        setWorkoutData(result.workoutData);
+        const cleanWorkoutData = sanitizeWorkoutData(result.workoutData);
+        setWorkoutData(cleanWorkoutData);
 
         localStorage.setItem("gymwag_history", JSON.stringify(result.history));
         localStorage.setItem("gymwag_profile_history", JSON.stringify(result.profileHistory));
         localStorage.setItem("gymwag_profile", JSON.stringify(result.profile));
-        localStorage.setItem("gymwag_workout_data", JSON.stringify(result.workoutData));
+        localStorage.setItem("gymwag_workout_data", JSON.stringify(cleanWorkoutData));
       }
     });
   };
