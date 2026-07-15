@@ -439,7 +439,7 @@ export default function RoutineManager({ workoutData, onUpdateWorkoutData, syncP
                       )}
                     </div>
                     
-                    <div className="ex-actions">
+                    <div className="ex-actions" onMouseDown={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()}>
                       <button className="btn-icon edit" onClick={() => handleStartEdit(ex)} title="Editar exercício">
                         <EditIcon size={16} />
                       </button>
