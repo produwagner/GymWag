@@ -31,6 +31,30 @@ export default function Dashboard({ workoutData, history, onStartWorkout, onSetA
 
   const weeklyProgress = getWeeklyProgress();
   
+  // Order routines based on the last completed workout (rotate so that next routine is first, last completed is last)
+  const getOrderedRoutines = () => {
+    const routines = workoutData.routines || [];
+    if (routines.length <= 1 || history.length === 0) {
+      return routines;
+    }
+
+    const lastWorkoutRoutineId = history[0]?.routineId;
+    if (!lastWorkoutRoutineId) {
+      return routines;
+    }
+
+    const lastIdx = routines.findIndex(r => r.id === lastWorkoutRoutineId);
+    if (lastIdx === -1) {
+      return routines;
+    }
+
+    const after = routines.slice(lastIdx + 1);
+    const upTo = routines.slice(0, lastIdx + 1);
+    return [...after, ...upTo];
+  };
+
+  const orderedRoutines = getOrderedRoutines();
+  
   // Calculate total stats
   const totalWorkouts = history.length;
   const totalWeight = history.reduce((acc, curr) => {
@@ -107,7 +131,7 @@ export default function Dashboard({ workoutData, history, onStartWorkout, onSetA
         </div>
         
         <div className="routines-grid">
-          {workoutData.routines.map((routine) => (
+          {orderedRoutines.map((routine) => (
             <div key={routine.id} className="routine-card glass glass-interactive">
               <div className="routine-header">
                 <div>
