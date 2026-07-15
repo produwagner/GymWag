@@ -141,6 +141,11 @@ export default function RoutineManager({ workoutData, onUpdateWorkoutData, syncP
 
   // Drag & Drop handlers
   const handleDragStart = (e, index) => {
+    // Only allow dragging if initiated from the drag handle
+    if (!e.target.closest('.drag-handle-wrapper')) {
+      e.preventDefault();
+      return;
+    }
     setDraggedIndex(index);
     e.dataTransfer.effectAllowed = "move";
   };
@@ -439,7 +444,7 @@ export default function RoutineManager({ workoutData, onUpdateWorkoutData, syncP
                       )}
                     </div>
                     
-                    <div className="ex-actions" onMouseDown={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()}>
+                    <div className="ex-actions">
                       <button className="btn-icon edit" onClick={() => handleStartEdit(ex)} title="Editar exercício">
                         <EditIcon size={16} />
                       </button>
