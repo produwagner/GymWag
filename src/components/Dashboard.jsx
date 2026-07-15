@@ -14,15 +14,16 @@ export default function Dashboard({ workoutData, history, onStartWorkout, onSetA
       const dayName = days[d.getDay()];
       const dateString = d.toDateString();
       
-      // Check if any workout in history occurred on this day
-      const completedOnDay = history.some(item => {
+      // Find workout in history that occurred on this day
+      const workoutOnDay = history.find(item => {
         const itemDate = new Date(item.date);
         return itemDate.toDateString() === dateString;
       });
 
       return {
         dayName,
-        completed: completedOnDay,
+        completed: !!workoutOnDay,
+        routineId: workoutOnDay ? workoutOnDay.routineId : null,
         isToday: dateString === today.toDateString()
       };
     });
@@ -71,7 +72,7 @@ export default function Dashboard({ workoutData, history, onStartWorkout, onSetA
             <div key={idx} className={`day-col ${day.isToday ? "today" : ""}`}>
               <span className="day-name">{day.dayName}</span>
               <div className={`day-dot ${day.completed ? "completed" : ""}`}>
-                {day.completed && "✓"}
+                {day.completed ? (day.routineId || "✓") : ""}
               </div>
             </div>
           ))}
@@ -237,8 +238,8 @@ export default function Dashboard({ workoutData, history, onStartWorkout, onSetA
         .day-dot.completed {
           background: var(--accent-lime);
           border-color: var(--accent-lime);
-          color: white;
-          font-weight: bold;
+          color: var(--color-on-accent);
+          font-weight: 800;
         }
 
         .stats-row {
